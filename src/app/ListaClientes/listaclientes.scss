@@ -1,0 +1,150 @@
+.main-container {
+  --background: #f4f6f8;
+}
+
+.custom-toolbar {
+  --background: #00a650;
+  --color: #ffffff;
+}
+
+ion-searchbar {
+  --background: #ffffff;
+  --placeholder-color: #8c8c8c;
+  --icon-color: #555555;
+  padding: 6px 10px;
+}
+
+.spinner-container, .empty-state {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.list-container {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Tarjeta Mini Ultra Delgado */
+.client-card-mini {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  
+  /* Cambiado a auto para que se adapte según las filas de datos */
+  height: auto; 
+  min-height: 95px;
+  box-sizing: border-box;
+  text-transform: uppercase;
+
+  .client-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    .row-badge {
+      margin-bottom: 3px; 
+      display: flex;
+
+      .badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background-color: #e6f0ff;
+        color: #0052cc;
+        white-space: nowrap;
+
+        &.ruc {
+          background-color: #e6f9ed;
+          color: #00875a;
+        }
+      }
+    }
+
+    .row-name {
+      margin-bottom: 3px;
+
+      .client-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #172b4d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        text-transform: uppercase;
+      }
+    }
+
+    .row-sub {
+      display: flex;
+      gap: 10px;
+      font-size: 0.72rem;
+      color: #6b778c;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Estilo del correo completo */
+    .row-email {
+      font-size: 0.72rem;
+      color: #6b778c;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .row-telefono {
+      font-size: 0.72rem;
+      color: #6b778c;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+
+    .btn-action {
+      background: none;
+      border: none;
+      padding: 6px;
+      font-size: 1.15rem;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &.edit {
+        color: #0052cc;
+      }
+
+      &.delete {
+        color: #de350b;
+      }
+
+      &:active {
+        background-color: #ebecf0;
+      }
+    }
+  }
+}

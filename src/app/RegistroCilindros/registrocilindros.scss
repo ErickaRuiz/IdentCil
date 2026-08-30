@@ -1,0 +1,248 @@
+/* Fondo General */
+ion-content {
+  --background: #f8fafc;
+}
+
+/* Header & Navbar */
+.custom-toolbar {
+  --background: #ffffff;
+  --border-color: transparent;
+  padding: 4px 12px;
+
+  .btn-back {
+    --color: #00A859;
+    --background: #f0fdf4;
+    --border-radius: 50%;
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-title {
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+  }
+
+  .header-logo {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+    margin-right: 4px;
+  }
+}
+
+/* Encabezado Principal */
+.page-header {
+  padding: 20px 20px 12px 20px;
+
+  .icon-badge {
+    width: 42px;
+    height: 42px;
+    background: #e6f7ef;
+    color: #00A859;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+}
+
+/* Tarjeta y Formulario */
+.form-card {
+  background: #ffffff;
+  margin: 0 16px 24px 16px;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+
+  .input-group {
+    margin-bottom: 16px;
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #00A859;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+
+      ion-icon {
+        font-size: 0.95rem;
+      }
+    }
+
+    .custom-input-item {
+      --background: #f8fafc;
+      --border-radius: 12px;
+      --padding-start: 12px;
+      --padding-end: 12px;
+      --min-height: 48px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+
+      &:focus-within {
+        border-color: #00A859;
+      }
+
+      ion-input,
+      ion-select {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1e293b;
+        --placeholder-color: #94a3b8;
+        --placeholder-opacity: 1;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  .btn-submit {
+    --background: #00A859;
+    --background-hover: #00904c;
+    --background-activated: #008043;
+    --border-radius: 12px;
+    --box-shadow: 0 8px 20px -4px rgba(0, 168, 89, 0.35);
+    font-weight: 700;
+    font-size: 0.95rem;
+    height: 48px;
+    margin-top: 20px;
+  }
+}
+
+/* Reglas de Mayúsculas para Modales y Alert */
+.select-uppercase .alert-radio-label {
+  text-transform: uppercase !important;
+}
+
+ion-alert .alert-radio-label {
+  text-transform: uppercase !important;
+}
+
+.custom-input-item.disabled-item {
+  opacity: 0.6;
+  background: #f1f5f9;
+}
+
+/* Estilos para el listado dentro del Modal (iguales a listaclientes) */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.client-card-mini {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  text-transform: uppercase;
+
+  .client-info {
+    flex: 1;
+    min-width: 0;
+
+    .row-badge {
+      margin-bottom: 4px;
+      display: flex;
+
+      .badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background-color: #e6f0ff;
+        color: #0052cc;
+        white-space: nowrap;
+
+        &.ruc {
+          background-color: #e6f9ed;
+          color: #00875a;
+        }
+      }
+    }
+
+    .row-name {
+      .client-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #172b4d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+      }
+    }
+  }
+}
+
+.page-header {
+  padding: 20px 20px 12px 20px;
+
+  /* Contenedor Flex para separar icono y botón a los extremos */
+  .header-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .icon-badge {
+    width: 42px;
+    height: 42px;
+    background: #e6f7ef;
+    color: #00A859;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 0;
+  }
+
+  .btn-ver-listado {
+    --border-color: #00A859;
+    --color: #00A859;
+    --border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.72rem;
+    height: 36px;
+    margin: 0;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+}

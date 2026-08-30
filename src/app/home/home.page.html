@@ -1,20 +1,81 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #177c4d; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+
+    <div class="logo-title-container">
+      <span class="main-title">ELECTRAMETAL</span>
+      <span class="sub-title">NORPERÚ S.A.C.</span>
+    </div>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="cerrarSesion()">
+        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  <!-- Tarjeta de Bienvenida -->
+  <div class="welcome-card">
+    <div class="user-info">
+      <h2>¡{{ saludo || 'Bienvenido' }}, {{ nombre || 'Usuario' }}! 👋</h2>
+      <p>Has iniciado sesión correctamente. Gestiona las operaciones de cilindros a continuación.</p>
+    </div>
+  </div>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+  <!-- Cuadrícula de Módulos Principal -->
+  <div class="modules-grid">
+    <ion-card class="module-card" (click)="navegarA('/ingreso')">
+      <ion-card-content>
+        <div class="icon-wrapper ingreso">
+          <ion-icon name="arrow-down-circle-outline"></ion-icon>
+        </div>
+        <h3>Ingreso</h3>
+        <p>Registrar lote de cilindros</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="module-card" (click)="navegarA('/recojo')">
+      <ion-card-content>
+        <div class="icon-wrapper recojo">
+          <ion-icon name="arrow-up-circle-outline"></ion-icon>
+        </div>
+        <h3>Recojo</h3>
+        <p>Retiro y recarga de cilindros</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="module-card" (click)="navegarA('/registrocliente')">
+  <ion-card-content>
+    <div class="icon-wrapper clientes">
+      <ion-icon name="business-outline"></ion-icon>
+    </div>
+    <h3>Registro de clientes</h3>
+    <p>Registro de empresas y RUC para asignación</p>
+  </ion-card-content>
+</ion-card>
+
+<ion-card class="module-card" (click)="navegarA('/listaclientes')">
+  <ion-card-content>
+    <div class="icon-wrapper clientes">
+      <ion-icon name="people-outline"></ion-icon>
+    </div>
+    <h3>Lista de Clientes</h3>
+    <p>Ver, editar o eliminar registros de clientes</p>
+  </ion-card-content>
+</ion-card>
+
+    <ion-card class="module-card" (click)="navegarA('/reportes')">
+      <ion-card-content>
+        <div class="icon-wrapper reportes">
+          <ion-icon name="document-text-outline"></ion-icon>
+        </div>
+        <h3>Reportes</h3>
+        <p>Generación de PDF y datos</p>
+      </ion-card-content>
+    </ion-card>
   </div>
 </ion-content>

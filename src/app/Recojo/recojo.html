@@ -1,0 +1,80 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Recojo de Cilindros</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="form-container">
+    <h2>Registrar Orden de Recojo</h2>
+    <p>Complete los datos para la recolección de cilindros vacíos o a mantenimiento.</p>
+
+    <form (ngSubmit)="guardarRecojo()">
+      <!-- Código / Serie del Cilindro -->
+      <ion-item class="custom-item">
+        <ion-label position="stacked">Código o QR del Cilindro *</ion-label>
+        <ion-input 
+          type="text" 
+          placeholder="Ej. CIL-2026-001" 
+          [(ngModel)]="recojo.codigo_qr" 
+          name="codigo_qr" 
+          required>
+        </ion-input>
+      </ion-item>
+
+      <!-- Cliente / Ubicación -->
+      <ion-item class="custom-item">
+        <ion-label position="stacked">Cliente / Sede de Recojo *</ion-label>
+        <ion-input 
+          type="text" 
+          placeholder="Nombre de la empresa o cliente" 
+          [(ngModel)]="recojo.cliente" 
+          name="cliente" 
+          required>
+        </ion-input>
+      </ion-item>
+
+      <!-- Estado en que se Recoge -->
+      <ion-item class="custom-item">
+        <ion-label position="stacked">Estado al Recoger *</ion-label>
+        <ion-select [(ngModel)]="recojo.estado" name="estado">
+          <ion-select-option value="Vacío">Vacío</ion-select-option>
+          <ion-select-option value="Con Fuga / Dañado">Con Fuga / Dañado</ion-select-option>
+          <ion-select-option value="Para Mantenimiento">Para Mantenimiento</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Motivo del Recojo -->
+      <ion-item class="custom-item">
+        <ion-label position="stacked">Motivo de Recojo *</ion-label>
+        <ion-select [(ngModel)]="recojo.motivo" name="motivo">
+          <ion-select-option value="Recarga">Para Recarga</ion-select-option>
+          <ion-select-option value="Devolución">Devolución de Alquiler</ion-select-option>
+          <ion-select-option value="Inspección">Inspección Periódica</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Observaciones -->
+      <ion-item class="custom-item">
+        <ion-label position="stacked">Observaciones</ion-label>
+        <ion-textarea 
+          placeholder="Detalles adicionales sobre el estado del cilindro o la entrega..." 
+          [(ngModel)]="recojo.observaciones" 
+          name="observaciones" 
+          rows="3">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- Botón de Guardar -->
+      <div class="button-group">
+        <ion-button expand="block" type="submit" color="primary" [disabled]="cargando">
+          <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+          <span *ngIf="!cargando">Registrar Recojo</span>
+        </ion-button>
+      </div>
+    </form>
+  </div>
+</ion-content>

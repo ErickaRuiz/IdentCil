@@ -1,0 +1,97 @@
+<ion-header class="ion-no-border">
+    <ion-toolbar class="custom-toolbar">
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/home" color="light"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Lista de Clientes</ion-title>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-container">
+
+    <ion-searchbar placeholder="Buscar por RUC, DNI o Nombre..." [debounce]="150" (ionInput)="filtrarClientes($event)">
+    </ion-searchbar>
+
+    <div *ngIf="cargando" class="spinner-container">
+        <ion-spinner name="crescent" color="success"></ion-spinner>
+        <p>Cargando lista de clientes...</p>
+    </div>
+
+    <div *ngIf="!cargando && clientesFiltrados.length === 0" class="empty-state">
+        <p>No se encontraron registros.</p>
+    </div>
+
+    <!-- Vista Ultra Compacta -->
+    <!-- Vista Ultra Compacta con RUC/DNI Arriba -->
+    <div *ngIf="!cargando && clientesFiltrados.length > 0" class="list-container">
+        <div class="client-card-mini" *ngFor="let cliente of clientesFiltrados">
+            <div class="client-info">
+                <div class="row-badge">
+                    <span class="badge" [class.ruc]="cliente.tipo_documento === 'RUC'">
+                        {{ cliente.tipo_documento }}: {{ cliente.num_documento }}
+                    </span>
+                </div>
+                <div class="row-name">
+                    <span class="client-name">{{ cliente.nombre_razon_social | uppercase }}</span>
+                </div>
+                <div class="row-sub">
+                    <span *ngIf="cliente.direccion">📍 {{ cliente.direccion | uppercase }}</span> 
+                </div>
+                <div class="row-sub">
+                    <span *ngIf="cliente.telefono">📞 {{ cliente.telefono }}</span>
+                </div>
+                <div class="row-sub">
+                    <span *ngIf="cliente.email">✉️ {{ cliente.email | uppercase }}</span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-action edit" (click)="abrirEditar(cliente.id)">
+                    <ion-icon name="pencil-outline"></ion-icon>
+                </button>
+                <button class="btn-action delete" (click)="confirmarEliminar(cliente.id)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para Editar Cliente -->
+    <ion-modal [isOpen]="modalEdicionAbierto" (didDismiss)="cerrarModal()">
+        <ng-template>
+            <ion-header>
+                <ion-toolbar class="custom-toolbar">
+                    <ion-title>Editar Cliente</ion-title>
+                    <ion-buttons slot="end">
+                        <ion-button color="light" (click)="cerrarModal()">Cerrar</ion-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+                <form (ngSubmit)="actualizarCliente()">
+                    <ion-item class="custom-item">
+                        <ion-label position="stacked">Documento</ion-label>
+                        <ion-input [(ngModel)]="clienteSeleccionado.num_documento" name="num_documento"></ion-input>
+                    </ion-item>
+                    <ion-item class="custom-item">
+                        <ion-label position="stacked">Nombre / Razón Social</ion-label>
+                        <ion-input [(ngModel)]="clienteSeleccionado.nombre_razon_social"
+                            name="nombre_razon_social"></ion-input>
+                    </ion-item>
+                    <ion-item class="custom-item">
+                        <ion-label position="stacked">Dirección</ion-label>
+                        <ion-input [(ngModel)]="clienteSeleccionado.direccion" name="direccion"></ion-input>
+                    </ion-item>
+                    <ion-item class="custom-item">
+                        <ion-label position="stacked">Teléfono</ion-label>
+                        <ion-input [(ngModel)]="clienteSeleccionado.telefono" name="telefono"></ion-input>
+                    </ion-item>
+
+                    <ion-button expand="block" type="submit" class="submit-btn" style="margin-top: 20px;">
+                        Guardar Cambios
+                    </ion-button>
+                </form>
+            </ion-content>
+        </ng-template>
+    </ion-modal>
+
+</ion-content>

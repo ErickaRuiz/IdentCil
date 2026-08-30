@@ -1,0 +1,115 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/listaclientes" color="light"></ion-back-button>
+    </ion-buttons>
+    <!-- Título Dinámico -->
+    <ion-title class="header-title">
+      {{ esEdicion ? 'Actualizar Cliente' : 'Registro de Clientes' }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-container">
+  <div class="form-wrapper">
+
+    <!-- Encabezado Dinámico -->
+    <div class="form-header">
+      <div class="header-icon">
+        <ion-icon [name]="esEdicion ? 'create-outline' : 'person-add-outline'"></ion-icon>
+      </div>
+      <h2>{{ esEdicion ? 'Editar Cliente' : 'Nuevo Cliente' }}</h2>
+      <p>{{ esEdicion ? 'Modifique los campos requeridos y guarde los cambios' : 'Gestión de datos para la asignación de
+        cilindros' }}</p>
+    </div>
+
+    <form (ngSubmit)="guardarCliente()" class="custom-form">
+
+      <!-- Selector Tipo Documento -->
+      <div class="input-card">
+        <ion-label class="input-label">Tipo de Documento</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="card-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-select [(ngModel)]="cliente.tipo_documento" name="tipo_documento" (ionChange)="cambiarTipoDoc()"
+            interface="popover">
+            <ion-select-option value="RUC">Empresa (RUC)</ion-select-option>
+            <ion-select-option value="DNI">Persona Natural (DNI)</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+
+      <!-- Número Documento (Corregido a [(ngModel)]) -->
+      <div class="input-card">
+        <ion-label class="input-label">
+          {{ cliente.tipo_documento === 'RUC' ? 'Número de RUC *' : 'Número de DNI' }}
+        </ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="document-text-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" inputmode="numeric"
+            [placeholder]="cliente.tipo_documento === 'RUC' ? 'Ej. 20536193805' : 'Ej. 73829104'"
+            [(ngModel)]="cliente.num_documento" name="num_documento" (ionInput)="filtrarNumero($event)" required>
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Nombre / Razón Social -->
+      <div class="input-card">
+        <ion-label class="input-label">
+          {{ cliente.tipo_documento === 'RUC' ? 'Razón Social *' : 'Nombres y Apellidos' }}
+        </ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon [name]="cliente.tipo_documento === 'RUC' ? 'business-outline' : 'person-outline'" slot="start"
+            class="field-icon"></ion-icon>
+          <ion-input type="text"
+            [placeholder]="cliente.tipo_documento === 'RUC' ? 'Ej. ELECTRAMETAL NORPERÚ S.A.C.' : 'Ej. Juan Pérez Gómez'"
+            [(ngModel)]="cliente.nombre_razon_social" name="nombre_razon_social" required>
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Dirección -->
+      <div class="input-card">
+        <ion-label class="input-label">Dirección Fiscal / Domicilio</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="location-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" placeholder="Ej. Jr. Independencia #1050" [(ngModel)]="cliente.direccion"
+            name="direccion"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Teléfono -->
+      <div class="input-card">
+        <ion-label class="input-label">Teléfono de Contacto</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="call-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="tel" inputmode="numeric" placeholder="Ej. 987654321" [(ngModel)]="cliente.telefono"
+            name="telefono"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Correo Electrónico -->
+      <div class="input-card">
+        <ion-label class="input-label">Correo Electrónico</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="mail-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="email" placeholder="contacto@empresa.com" [(ngModel)]="cliente.email"
+            name="email"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Botón de Acción Dinámico -->
+      <div class="action-container">
+        <!-- Botón principal de guardado -->
+       <ion-button 
+  expand="block" 
+  color="success" 
+  (click)="guardarCliente()" 
+  [disabled]="cargando" 
+  class="btn-guardar">
+  {{ cargando ? 'Guardando cambios...' : (esEdicion ? 'Actualizar Cliente' : 'Registrar Cliente') }}
+</ion-button>
+      </div>
+
+    </form>
+  </div>
+</ion-content>

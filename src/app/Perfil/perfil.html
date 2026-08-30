@@ -1,0 +1,88 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #177c4d; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Mi Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="profile-card">
+    <!-- Contenedor del Avatar / Foto de Perfil -->
+    <div class="avatar-container">
+      <div class="avatar-wrapper" (click)="fileInput.click()">
+        <img *ngIf="fotoUrl" [src]="fotoUrl" class="avatar-img" />
+        <div *ngIf="!fotoUrl" class="avatar-circle">
+          {{ nombre ? nombre.charAt(0).toUpperCase() : 'U' }}
+        </div>
+        <div class="camera-badge">
+          <ion-icon name="camera-outline"></ion-icon>
+        </div>
+      </div>
+      <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display: none;" />
+
+      <h2>{{ nombre }}</h2>
+      <p class="email">{{ email }}</p>
+
+      <!-- Botón pequeño Editar Datos justo debajo del correo -->
+      <button type="button" class="btn-edit-link" (click)="toggleEdicion()">
+        <ion-icon [name]="editando ? 'close-outline' : 'create-outline'"></ion-icon>
+        {{ editando ? 'Cancelar edición' : 'Editar datos' }}
+      </button>
+    </div>
+
+    <!-- Vista de Solo Lectura -->
+    <div class="info-list" *ngIf="!editando">
+      <div class="info-item">
+        <ion-icon name="person-outline"></ion-icon>
+        <div class="details">
+          <span>Nombre completo</span>
+          <p>{{ nombre }}</p>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <ion-icon name="transgender-outline"></ion-icon>
+        <div class="details">
+          <span>Género</span>
+          <p>{{ genero }}</p>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <ion-icon name="mail-outline"></ion-icon>
+        <div class="details">
+          <span>Correo electrónico</span>
+          <p>{{ email }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista Formulario de Edición -->
+    <form [formGroup]="perfilForm" (ngSubmit)="guardarCambios()" class="edit-form" *ngIf="editando">
+  <div class="form-group">
+    <label>Nombre completo</label>
+    <input type="text" formControlName="nombre" placeholder="Ingresa tu nombre y apellidos" />
+  </div>
+
+  <div class="form-group">
+    <label>Género</label>
+    <select formControlName="genero">
+      <option value="Femenino">Femenino</option>
+      <option value="Masculino">Masculino</option>
+    </select>
+  </div>
+
+  <!-- Campo para editar correo electrónico -->
+  <div class="form-group">
+    <label>Correo electrónico</label>
+    <input type="email" formControlName="email" placeholder="correo@ejemplo.com" />
+  </div>
+
+  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save">
+    Guardar Cambios
+  </button>
+</form>
+  </div>
+</ion-content>

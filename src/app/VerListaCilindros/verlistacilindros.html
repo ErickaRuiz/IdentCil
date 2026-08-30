@@ -1,0 +1,53 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
+  <ion-buttons slot="start">
+  <ion-button (click)="regresar()" class="btn-back">
+    <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+  </ion-button>
+</ion-buttons>
+
+    <ion-title class="brand-title">LISTADO DE CILINDROS</ion-title>
+  </ion-toolbar>
+
+  <ion-toolbar class="custom-toolbar">
+    <ion-searchbar placeholder="Buscar por Serie, Gas o Cliente..." [debounce]="150" [(ngModel)]="filtroCilindro"
+      (ionInput)="filtrarCilindros($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-content">
+
+  <!-- MENSAJE SI NO HAY RESULTADOS -->
+  <div *ngIf="cilindrosFiltrados.length === 0" class="empty-state">
+    <ion-icon name="search-outline"></ion-icon>
+    <h3>No se encontraron cilindros</h3>
+    <p *ngIf="filtroCilindro">No hay registros que coincidan con "{{ filtroCilindro }}"</p>
+  </div>
+
+  <!-- LISTADO DE TARJETAS COMPACTAS -->
+  <div *ngIf="cilindrosFiltrados.length > 0" class="list-container">
+    <div class="cylinder-card" *ngFor="let item of cilindrosFiltrados">
+      <div class="card-info">
+       <div class="row-badges">
+  <span class="badge serie">
+    {{ item.numeroSerie }}
+  </span>
+  <span class="badge gas" [ngClass]="obtenerClaseGas(item.tipoGas)">
+    <ion-icon name="flask-outline"></ion-icon> {{ item.tipoGas }}
+  </span>
+  <span class="badge capacidad" *ngIf="item.capacidad">
+    {{ item.capacidad }}
+  </span>
+</div>
+        <div class="row-client">
+          <span class="client-name">{{ item.clienteNombre | uppercase }}</span>
+        </div>
+        <div class="row-doc">
+          <span>{{ item.clienteDocTipo || 'DOC' }}: {{ item.clienteDocNum }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</ion-content>

@@ -1,0 +1,99 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #00A859; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" style="--color: #ffffff;">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Ingreso de Cilindros</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding bg-light">
+
+  <ion-card class="custom-card header-card">
+    <ion-card-content>
+      <div class="header-top">
+        <div class="company-info">
+          <h2>{{ razonSocial }}</h2>
+          <p class="ruc-text">RUC: {{ rucProveedor }}</p>
+        </div>
+        <img src="assets/icon/logo_ele.png" alt="Logo" class="brand-logo" />
+      </div>
+
+      <div class="selectors-grid">
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Propiedad</ion-label>
+          <ion-select [(ngModel)]="propiedad" interface="popover">
+            <ion-select-option value="ELECTRAMETAL">ELECTRAMETAL</ion-select-option>
+            <ion-select-option value="Proveedor">Proveedor</ion-select-option>
+            <ion-select-option value="Cliente">Cliente</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Estado</ion-label>
+          <ion-select [(ngModel)]="estado" interface="popover">
+            <ion-select-option value="LLENO">LLENO</ion-select-option>
+            <ion-select-option value="VACIO">VACIO</ion-select-option>
+            <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
+            <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
+            <ion-select-option value="DEVOLUCION">Devolución</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card class="custom-card">
+    <ion-card-content>
+      <div class="search-box">
+        <ion-input 
+          fill="outline" 
+          label="Número de Serie / Código" 
+          labelPlacement="floating" 
+          [(ngModel)]="serieActual" 
+          (keyup.enter)="buscarYAgregarCilindro()"
+          placeholder="Escriba la serie aquí">
+        </ion-input>
+        <ion-button color="success" class="btn-search" (click)="buscarYAgregarCilindro()">
+          <ion-icon slot="icon-only" name="search-outline"></ion-icon>
+        </ion-button>
+        <ion-button fill="solid" color="primary" class="btn-scanner" (click)="abrirEscanerML()">
+          <ion-icon slot="icon-only" name="qr-code-outline"></ion-icon>
+        </ion-button>
+      </div>
+      <span class="hint-text">Presione ENTER o la lupa para agregar la serie a la lista</span>
+    </ion-card-content>
+  </ion-card>
+
+  <div class="list-container" *ngIf="listaCilindros.length > 0">
+    <div class="list-header">
+      <h3>Cilindros a Ingresar ({{ listaCilindros.length }})</h3>
+    </div>
+
+    <ion-card class="cylinder-item-card" *ngFor="let item of listaCilindros; let i = index">
+      <div class="cylinder-number">#{{ i + 1 }}</div>
+      <div class="cylinder-info">
+        <h4>Serie: {{ item.numeroSerie }}</h4>
+        <p>Gas: <strong>{{ item.tipoGas }}</strong> | Capacidad: {{ item.capacidad }}</p>
+      </div>
+      <ion-button fill="clear" color="danger" (click)="eliminarSerie(i)">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-card>
+  </div>
+
+</ion-content>
+
+<ion-footer class="ion-no-border" *ngIf="listaCilindros.length > 0">
+  <ion-toolbar class="ion-padding-horizontal ion-padding-bottom">
+    <ion-button expand="block" color="success" size="large" (click)="guardarIngreso()" [disabled]="cargando">
+      <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+      <span *ngIf="!cargando">
+        <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+        Guardar Ingreso ({{ listaCilindros.length }})
+      </span>
+    </ion-button>
+  </ion-toolbar>
+</ion-footer>

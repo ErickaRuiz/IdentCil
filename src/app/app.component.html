@@ -1,3 +1,118 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <ion-menu contentId="main-content" type="overlay">
+    <ion-content>
+      <!-- Cabecera centrada con logo pequeño -->
+      <div style="text-align: center; padding: 10px 0 10px 0;">
+        <img src="./assets/icon/logo.png" alt="Logo Identcil"
+          style="width: 120px; height: auto; margin: 0 auto; display: block;" />
+      </div>
+
+      <!-- Contenedor principal para alinear todas las opciones exactamente igual -->
+      <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
+
+        <!-- 2. INICIO -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/home" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="home-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            INICIO
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- PERFIL (NUEVO BOTÓN) -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/Perfil" routerDirection="forward"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="person-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            PERFIL
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- REGISTRO DE CILINDROS -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/registrocilindros" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="flask-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            REGISTRO DE CILINDROS
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/almacenes" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="archive-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            GESTIÓN DE ALMACENES
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- 3. INGRESO DE CILINDROS -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/ingreso" routerDirection="forward"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="arrow-down-circle-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            INGRESO CILINDROS
+          </ion-button>
+        </ion-menu-toggle>
+
+
+
+        <!-- 4. RECOJO / VACÍOS -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/recojo" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="refresh-circle-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            RECOJO DE VACÍOS
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- 5. CONSULTA CLIENTES -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/consulta-clientes" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="people-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            CILINDROS CLIENTES
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- 6. CONSULTA PROVEEDORES -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/consulta-proveedores" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="business-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            CILINDROS PROVEEDOR
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- 7. DEVOLUCIONES -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" fill="clear" routerLink="/devoluciones" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0; color: #333333; --color: #333333;">
+            <ion-icon name="arrow-up-circle-outline" slot="start"
+              style="font-size: 1.2rem; margin-right: 8px; color: #333333;"></ion-icon>
+            DEVOLUCIONES
+          </ion-button>
+        </ion-menu-toggle>
+
+        <!-- CERRAR SESIÓN -->
+        <ion-menu-toggle auto-hide="false">
+          <ion-button expand="block" color="danger" routerLink="/login" routerDirection="root"
+            style="--border-radius: 6px; font-weight: bold; height: 38px; margin: 0;">
+            <ion-icon name="log-out-outline" slot="start" style="font-size: 1.2rem; margin-right: 8px;"></ion-icon>
+            CERRAR SESIÓN
+          </ion-button>
+        </ion-menu-toggle>
+
+      </div>
+    </ion-content>
+  </ion-menu>
+
+  <ion-router-outlet id="main-content"></ion-router-outlet>
 </ion-app>

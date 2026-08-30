@@ -1,0 +1,129 @@
+/* Toolbar Verde Corporativo Electrametal */
+.custom-toolbar {
+  --background: #00A859;
+  --color: #ffffff;
+  padding: 4px 0;
+
+  .header-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #ffffff;
+  }
+}
+
+.main-container {
+  --background: #f4f6f8;
+}
+
+.form-wrapper {
+  padding: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Encabezado */
+.form-header {
+  text-align: center;
+  margin-bottom: 20px;
+
+  .header-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(0, 168, 89, 0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px auto;
+
+    ion-icon {
+      font-size: 28px;
+      color: #00A859;
+    }
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a252c;
+  }
+
+  p {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+}
+
+/* Tarjetas de Inputs */
+.input-card {
+  margin-bottom: 14px;
+
+  .input-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    display: block;
+    margin-left: 4px;
+  }
+
+  .custom-input-item {
+    --background: #ffffff;
+    --border-radius: 12px;
+    --padding-start: 12px;
+    --inner-padding-end: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus-within {
+      border-color: #00A859;
+      box-shadow: 0 0 0 3px rgba(0, 168, 89, 0.15);
+    }
+
+    .field-icon {
+      color: #00A859;
+      font-size: 20px;
+      margin-right: 8px;
+    }
+
+    ion-input, ion-select {
+      --padding-top: 10px;
+      --padding-bottom: 10px;
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+  }
+}
+
+/* Botón de Acción */
+.action-container {
+  margin-top: 24px;
+
+  .submit-btn {
+    --background: #00A859;
+    --background-activated: #008f4c;
+    --background-hover: #009850;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 168, 89, 0.3);
+    height: 48px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+  }
+}
+.btn-guardar {
+  --background: #00a650; /* Verde principal */
+  --background-activated: #008741; /* Verde al presionar */
+  --background-focused: #008741;
+  --border-radius: 8px;
+  font-weight: 700;
+  margin-top: 16px;
+}
+ion-input {
+  --text-transform: uppercase;
+  text-transform: uppercase;
+}
