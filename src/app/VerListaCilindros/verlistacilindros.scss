@@ -75,36 +75,17 @@ ion-searchbar {
   justify-content: space-between;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
 
   .card-info {
     flex: 1;
     min-width: 0;
+    padding-right: 8px;
 
     .row-badges {
       display: flex;
       gap: 6px;
       margin-bottom: 6px;
-
-      .badge {
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 6px;
-        white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-
-        &.serie {
-          background-color: #e6f7ef;
-          color: #00A859;
-        }
-
-        &.gas {
-          background-color: #f1f5f9;
-          color: #475569;
-        }
-      }
     }
 
     .row-client {
@@ -125,10 +106,25 @@ ion-searchbar {
       color: #64748b;
     }
   }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    z-index: 10;
+
+    ion-button {
+      --padding-start: 6px;
+      --padding-end: 6px;
+      height: 36px;
+      margin: 0;
+      pointer-events: auto;
+    }
+  }
 }
 
-/* Reemplaza la sección .badge dentro de .row-badges en verlistacilindros.scss */
-
+/* Badges de Estado y Tipo de Gas */
 .badge {
   font-size: 0.7rem;
   font-weight: 700;
@@ -148,36 +144,96 @@ ion-searchbar {
     background-color: #f1f5f9;
     color: #475569;
 
-    /* Estilos dinámicos asignados por ngClass */
     &.gas-oxigeno {
       background-color: #dcfce7 !important;
-      color: #15803d !important; /* Verde */
+      color: #15803d !important;
     }
 
     &.gas-acetileno {
       background-color: #fee2e2 !important;
-      color: #b91c1c !important; /* Rojo */
+      color: #b91c1c !important;
     }
 
     &.gas-estargor {
       background-color: #fef3c7 !important;
-      color: #78350f !important; /* Marrón / Ámbar */
+      color: #78350f !important;
     }
 
     &.gas-nitrogeno {
       background-color: #fef9c3 !important;
-      color: #a16207 !important; /* Amarillo */
+      color: #a16207 !important;
     }
 
     &.gas-co2 {
       background-color: #e2e8f0 !important;
-      color: #334155 !important; /* Plomo / Gris */
+      color: #334155 !important;
     }
+  }
+
+  &.capacidad {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
   }
 }
 
-.badge.capacidad {
-  background-color: #f1f5f9;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+/* Estilos para el Modal de Detalle */
+.detail-card {
+  background: #ffffff;
+  margin: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #00A859;
+    }
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+
+      &.full-width {
+        grid-column: span 2;
+      }
+
+      .label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-top: 2px;
+
+        &.highlight {
+          color: #00A859;
+          font-weight: 800;
+        }
+      }
+    }
+  }
 }

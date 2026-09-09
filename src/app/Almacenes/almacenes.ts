@@ -68,7 +68,7 @@ export class AlmacenesPage implements OnInit {
     addIcons({ arrowBackOutline, addCircleOutline, listOutline, businessOutline, locationOutline, createOutline, trashOutline, archiveOutline });
   }
 
-  ngOnInit() {}
+ ngOnInit() {}
 
   regresar() {
     this.navCtrl.back();
@@ -81,20 +81,23 @@ export class AlmacenesPage implements OnInit {
 
   async obtenerAlmacenes() {
     this.cargandoLista = true;
-    const { data, error } = await this.supabaseService.supabase
-      .from('almacenes')
-      .select('*')
-      .order('created_at', { ascending: false });
+    this.cdRef.detectChanges();
 
-    this.cargandoLista = false;
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('almacenes')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error al cargar almacenes:', error.message);
-      return;
-    }
-
-    if (data) {
-      this.listaAlmacenes = data;
+      if (error) {
+        console.error('Error al cargar almacenes:', error.message);
+      } else if (data) {
+        this.listaAlmacenes = data;
+      }
+    } catch (err) {
+      console.error('Error de red al cargar:', err);
+    } finally {
+      this.cargandoLista = false;
       this.cdRef.detectChanges();
     }
   }
@@ -106,11 +109,13 @@ export class AlmacenesPage implements OnInit {
       ubicacion: almacen.ubicacion || ''
     };
     this.modalAbierto = false;
+    this.cdRef.detectChanges();
   }
 
   cancelarEdicion() {
     this.almacenEditandoId = null;
     this.nuevoAlmacen = { nombre: '', ubicacion: '' };
+    this.cdRef.detectChanges();
   }
 
   async guardarAlmacen() {
@@ -120,40 +125,46 @@ export class AlmacenesPage implements OnInit {
     }
 
     this.cargando = true;
+    this.cdRef.detectChanges();
 
-    if (this.almacenEditandoId) {
-      const { error } = await this.supabaseService.supabase
-        .from('almacenes')
-        .update({
-          nombre: this.nuevoAlmacen.nombre.trim().toUpperCase(),
-          ubicacion: this.nuevoAlmacen.ubicacion.trim()
-        })
-        .eq('id', this.almacenEditandoId);
+    try {
+      if (this.almacenEditandoId) {
+        // Actualizar
+        const { error } = await this.supabaseService.supabase
+          .from('almacenes')
+          .update({
+            nombre: this.nuevoAlmacen.nombre.trim().toUpperCase(),
+            ubicacion: this.nuevoAlmacen.ubicacion.trim()
+          })
+          .eq('id', this.almacenEditandoId);
 
-      this.cargando = false;
-
-      if (error) {
-        alert('Error al actualizar almacén: ' + error.message);
+        if (error) {
+          alert('Error al actualizar almacén: ' + error.message);
+        } else {
+          alert('¡Almacén actualizado con éxito!');
+          this.cancelarEdicion();
+        }
       } else {
-        alert('¡Almacén actualizado con éxito!');
-        this.cancelarEdicion();
-      }
-    } else {
-      const { error } = await this.supabaseService.supabase
-        .from('almacenes')
-        .insert([{
-          nombre: this.nuevoAlmacen.nombre.trim().toUpperCase(),
-          ubicacion: this.nuevoAlmacen.ubicacion.trim()
-        }]);
+        // Insertar
+        const { error } = await this.supabaseService.supabase
+          .from('almacenes')
+          .insert([{
+            nombre: this.nuevoAlmacen.nombre.trim().toUpperCase(),
+            ubicacion: this.nuevoAlmacen.ubicacion.trim()
+          }]);
 
+        if (error) {
+          alert('Error al guardar almacén: ' + error.message);
+        } else {
+          alert('¡Almacén registrado con éxito!');
+          this.nuevoAlmacen = { nombre: '', ubicacion: '' };
+        }
+      }
+    } catch (err: any) {
+      alert('Ocurrió un error inesperado: ' + err.message);
+    } finally {
       this.cargando = false;
-
-      if (error) {
-        alert('Error al guardar almacén: ' + error.message);
-      } else {
-        alert('¡Almacén registrado con éxito!');
-        this.nuevoAlmacen = { nombre: '', ubicacion: '' };
-      }
+      this.cdRef.detectChanges();
     }
   }
 

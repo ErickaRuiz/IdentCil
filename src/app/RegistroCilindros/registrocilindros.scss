@@ -246,3 +246,23 @@ ion-alert .alert-radio-label {
     color: #64748b;
   }
 }
+
+/* Disposición en 2 columnas para campos dobles */
+.input-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+
+  .flex-1 {
+    flex: 1;
+  }
+}
+.custom-input-item {
+  .input-unit {
+    color: #00A859;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding-left: 4px;
+    user-select: none;
+  }
+}

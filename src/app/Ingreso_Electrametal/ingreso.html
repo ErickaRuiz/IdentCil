@@ -13,6 +13,7 @@
 
   <ion-card class="custom-card header-card">
     <ion-card-content>
+      <!-- Cabecera de la Empresa -->
       <div class="header-top">
         <div class="company-info">
           <h2>{{ razonSocial }}</h2>
@@ -21,40 +22,77 @@
         <img src="assets/icon/logo_ele.png" alt="Logo" class="brand-logo" />
       </div>
 
+
+
+      <!-- Primera Fila: Propiedad y Estado en 2 Columnas -->
       <div class="selectors-grid">
         <ion-item fill="outline" class="custom-select">
           <ion-label position="stacked">Propiedad</ion-label>
-          <ion-select [(ngModel)]="propiedad" interface="popover">
+          <ion-select [(ngModel)]="propiedad" (ionChange)="onPropiedadChange()" interface="popover">
             <ion-select-option value="ELECTRAMETAL">ELECTRAMETAL</ion-select-option>
             <ion-select-option value="Proveedor">Proveedor</ion-select-option>
             <ion-select-option value="Cliente">Cliente</ion-select-option>
           </ion-select>
         </ion-item>
+      </div>
 
+
+      <!-- Segunda Fila: Cliente / Proveedor a Ancho Completo -->
+      <div class="full-field" *ngIf="propiedad !== 'ELECTRAMETAL'">
         <ion-item fill="outline" class="custom-select">
-          <ion-label position="stacked">Estado</ion-label>
-          <ion-select [(ngModel)]="estado" interface="popover">
-            <ion-select-option value="LLENO">LLENO</ion-select-option>
-            <ion-select-option value="VACIO">VACIO</ion-select-option>
-            <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
-            <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
-            <ion-select-option value="DEVOLUCION">Devolución</ion-select-option>
+          <ion-label position="stacked">
+            {{ propiedad === 'Proveedor' ? 'Proveedor (RUC)' : 'Cliente (DNI / RUC)' }}
+          </ion-label>
+          <ion-select [(ngModel)]="entidadSeleccionadaId" interface="popover" placeholder="Seleccionar opción">
+            <ion-select-option *ngFor="let ent of listaEntidades" [value]="ent.id">
+              {{ (ent.nombre_razon_social || ent.razon_social || ent.nombre || 'Entidad ' + ent.id) | uppercase }}
+              <ng-container *ngWith="(ent.num_documento || ent.numero_documento || ent.ruc || ent.dni) as doc">
+                <span *ngIf="doc"> ({{ doc }})</span>
+              </ng-container>
+            </ion-select-option>
           </ion-select>
+        </ion-item>
+      </div>
+
+      <ion-item fill="outline" class="custom-select">
+        <ion-label position="stacked">Estado</ion-label>
+        <ion-select [(ngModel)]="estado" interface="popover">
+          <ion-select-option value="LLENO">LLENO</ion-select-option>
+          <ion-select-option value="VACIO">VACIO</ion-select-option>
+          <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
+          <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
+          <ion-select-option value="DEVOLUCION">Devolución</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Segunda Fila: Almacén Destino a Ancho Completo -->
+      <div class="full-field">
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Almacén Destino</ion-label>
+          <ion-select [(ngModel)]="almacenId" interface="popover" placeholder="Seleccione almacén">
+            <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
+              {{ alm.nombre }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+
+      <!-- Tercera Fila: Observación / Descripción -->
+      <div class="full-field">
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Observación / Estado Físico</ion-label>
+          <ion-input [(ngModel)]="observacion" placeholder="Ej: ..."></ion-input>
         </ion-item>
       </div>
     </ion-card-content>
   </ion-card>
 
+  <!-- Tarjeta de Búsqueda -->
   <ion-card class="custom-card">
     <ion-card-content>
       <div class="search-box">
-        <ion-input 
-          fill="outline" 
-          label="Número de Serie / Código" 
-          labelPlacement="floating" 
-          [(ngModel)]="serieActual" 
-          (keyup.enter)="buscarYAgregarCilindro()"
-          placeholder="Escriba la serie aquí">
+        <ion-input fill="outline" label="Número de Serie / Código" labelPlacement="floating" [(ngModel)]="serieActual"
+          (keyup.enter)="buscarYAgregarCilindro()" placeholder="Escriba la serie aquí">
         </ion-input>
         <ion-button color="success" class="btn-search" (click)="buscarYAgregarCilindro()">
           <ion-icon slot="icon-only" name="search-outline"></ion-icon>
@@ -67,6 +105,7 @@
     </ion-card-content>
   </ion-card>
 
+  <!-- Lista de Cilindros Escaneados -->
   <div class="list-container" *ngIf="listaCilindros.length > 0">
     <div class="list-header">
       <h3>Cilindros a Ingresar ({{ listaCilindros.length }})</h3>

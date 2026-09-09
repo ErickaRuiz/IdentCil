@@ -16,17 +16,16 @@
 
 <ion-content class="main-content">
   <div class="page-header">
-  <div class="header-top-row">
-    <div class="icon-badge">
-      <ion-icon name="flask-outline"></ion-icon>
-    </div>
-    
-    <ion-button routerLink="/ver-lista-cilindros" fill="outline" size="small" class="btn-ver-listado">
-  <ion-icon name="list-outline" slot="start"></ion-icon>
-  VER LISTADO
-</ion-button>
-  </div>
+    <div class="header-top-row">
+      <div class="icon-badge">
+        <ion-icon name="flask-outline"></ion-icon>
+      </div>
 
+      <ion-button routerLink="/ver-lista-cilindros" fill="outline" size="small" class="btn-ver-listado">
+        <ion-icon name="list-outline" slot="start"></ion-icon>
+        VER LISTADO
+      </ion-button>
+    </div>
 
     <h2>REGISTRO DE CILINDROS</h2>
     <p>Ingresa los datos para la trazabilidad</p>
@@ -40,24 +39,23 @@
         <ion-icon name="barcode-outline"></ion-icon> NÚMERO DE SERIE
       </label>
       <ion-item lines="none" class="custom-input-item">
-        <ion-input [(ngModel)]="cilindro.numeroSerie" name="numeroSerie" placeholder="EJ. CIL-2026-99" type="text">
-        </ion-input>
+        <ion-input [(ngModel)]="cilindro.numeroSerie" name="numeroSerie" placeholder="EJ. CIL-2026-99"
+          type="text"></ion-input>
       </ion-item>
     </div>
 
-    <!-- PROPIETARIO / EMPRESA CON BUSCADOR -->
+    <!-- PROPIETARIO / EMPRESA -->
     <div class="input-group">
       <label class="input-label">
         <ion-icon name="business-outline"></ion-icon> PROPIETARIO / EMPRESA
       </label>
       <ion-item lines="none" class="custom-input-item" id="open-client-modal" button="true">
-        <ion-input [value]="clienteSeleccionadoNombre" placeholder="SELECCIONE UN CLIENTE" readonly="true">
-        </ion-input>
+        <ion-input [value]="clienteSeleccionadoNombre" placeholder="SELECCIONE UN CLIENTE" readonly="true"></ion-input>
         <ion-icon name="chevron-down-outline" slot="end" style="color: #94a3b8;"></ion-icon>
       </ion-item>
     </div>
 
-    <!-- TIPO DE GAS (Bloqueado si no se elige cliente) -->
+    <!-- TIPO DE GAS -->
     <div class="input-group">
       <label class="input-label" [style.opacity]="!cilindro.clienteId ? '0.5' : '1'">
         <ion-icon name="flask-outline"></ion-icon> TIPO DE GAS
@@ -70,15 +68,139 @@
           <ion-select-option value="ARGÓN">ARGÓN</ion-select-option>
           <ion-select-option value="NITRÓGENO">NITRÓGENO</ion-select-option>
           <ion-select-option value="DIÓXIDO DE CARBONO">DIÓXIDO DE CARBONO (CO2)</ion-select-option>
-          <ion-select-option value="MEZCLA">MEZCLA</ion-select-option>
+          <ion-select-option value="MEZCLA">MEZCLA (STARGOLD)</ion-select-option>
         </ion-select>
       </ion-item>
     </div>
 
+    <!-- MARCA Y AÑO DE FABRICACIÓN -->
+    <div class="input-row">
+      <div class="input-group flex-1">
+        <label class="input-label"><ion-icon name="pricetag-outline"></ion-icon> MARCA</label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.marca" name="marca" placeholder="EJ. LUXFER" type="text"></ion-input>
+        </ion-item>
+      </div>
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="calendar-outline"></ion-icon> AÑO FAB.
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.anioFabricacion" name="anioFabricacion" placeholder="02/2022" type="text"
+            maxlength="7" (ionInput)="formatearAnioFabricacion($event)">
+          </ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- UNIDAD DE MEDIDA Y PESO -->
+    <div class="input-row">
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="options-outline"></ion-icon> UNIDAD DE MEDIDA
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-select [(ngModel)]="cilindro.unidadMedida" placeholder="Seleccione unidad">
+            <ion-select-option value="M3">M3</ion-select-option>
+            <ion-select-option value="KG">KG</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="scale-outline"></ion-icon> PESO
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.peso" name="peso" placeholder="47.4" type="number"></ion-input>
+          <span slot="end" class="input-unit">kg</span>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- DIÁMETRO Y ALTURA -->
+    <div class="input-row">
+      <div class="input-group flex-1">
+        <label class="input-label"><ion-icon name="resize-outline"></ion-icon> DIÁMETRO</label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.anchoDiametro" name="anchoDiametro" placeholder="23"
+            type="number"></ion-input>
+          <span slot="end" class="input-unit">cm</span>
+        </ion-item>
+      </div>
+      <div class="input-group flex-1">
+        <label class="input-label"><ion-icon name="arrows-vertical-outline"></ion-icon> ALTURA</label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.largoAltura" name="largoAltura" placeholder="140" type="number"></ion-input>
+          <span slot="end" class="input-unit">cm</span>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- FILA: CAPACIDAD DINÁMICA (CONTENIDO O LITROS) + COLOR -->
+    <div class="input-row">
+      <!-- Muestra CONTENIDO si el gas es ACETILENO -->
+      <div class="input-group flex-1" *ngIf="cilindro.tipoGas === 'ACETILENO'">
+        <label class="input-label">
+          <ion-icon name="cube-outline"></ion-icon> CONTENIDO
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.contenido" name="contenido" placeholder="7" type="number"></ion-input>
+          <span slot="end" class="input-unit">kg</span>
+        </ion-item>
+      </div>
+
+      <!-- Muestra LITROS si el gas NO es ACETILENO -->
+      <div class="input-group flex-1" *ngIf="cilindro.tipoGas !== 'ACETILENO'">
+        <label class="input-label">
+          <ion-icon name="water-outline"></ion-icon> LITROS
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.litros" name="litros" placeholder="50" type="number"></ion-input>
+          <span slot="end" class="input-unit">L</span>
+        </ion-item>
+      </div>
+
+      <!-- COLOR -->
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="color-palette-outline"></ion-icon> COLOR
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.color" name="color" placeholder="ROJO / GRIS" type="text"></ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- FILA: PRUEBA HIDROSTÁTICA Y PROCEDENCIA -->
+    <div class="input-row">
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="shield-checkmark-outline"></ion-icon> PRUEBA HIDR. (PH)
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.ph" name="ph" placeholder="08/2026" type="text" maxlength="7"
+            (ionInput)="formatearPH($event)">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="earth-outline"></ion-icon> PROCEDENCIA
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.procedencia" name="procedencia" placeholder="CHN / USA"
+            type="text"></ion-input>
+        </ion-item>
+      </div>
+    </div>
+
     <!-- BOTÓN GUARDAR -->
-    <ion-button expand="block" class="btn-submit" (click)="guardarCilindro()">
+    <ion-button expand="full" (click)="guardarCilindro()" class="btn-guardar"
+      style="--background: #00A859; --background-activated: #008f4c; --color: #ffffff;">
       <ion-icon name="save-outline" slot="start"></ion-icon>
-      GUARDAR CILINDRO
+      {{ textoBotonGuardar }}
     </ion-button>
 
   </div>
@@ -102,8 +224,6 @@
     </ion-header>
 
     <ion-content class="main-content">
-
-      <!-- MENSAJE SI NO HAY COINCIDENCIAS -->
       <div *ngIf="clientesFiltrados.length === 0" style="text-align: center; padding: 40px 20px;">
         <ion-icon name="search-outline" style="font-size: 3rem; color: #94a3b8; margin-bottom: 10px;"></ion-icon>
         <h3 style="font-weight: 700; color: #475569; margin: 0;">No se encontró el cliente</h3>
@@ -112,11 +232,9 @@
         </p>
       </div>
 
-      <!-- LISTA ULTRA COMPACTA (Estilo listaclientes) -->
       <div *ngIf="clientesFiltrados.length > 0" class="list-container" style="padding: 8px;">
         <div class="client-card-mini" *ngFor="let cliente of clientesFiltrados"
           (click)="seleccionarCliente(cliente, clientModal)" style="cursor: pointer; margin-bottom: 6px;">
-
           <div class="client-info">
             <div class="row-badge">
               <span class="badge" [class.ruc]="cliente.tipo_documento === 'RUC'">
@@ -127,14 +245,11 @@
               <span class="client-name">{{ cliente.nombre_razon_social | uppercase }}</span>
             </div>
           </div>
-
           <div class="actions">
             <ion-icon name="chevron-forward-outline" style="color: #00A859; font-size: 1.2rem;"></ion-icon>
           </div>
-
         </div>
       </div>
-
     </ion-content>
   </ng-template>
 </ion-modal>

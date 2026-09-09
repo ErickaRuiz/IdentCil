@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavController } from '@ionic/angular';
@@ -22,14 +22,13 @@ import {
   IonSpinner
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { 
-  arrowBackOutline, 
-  searchOutline, 
-  qrCodeOutline, 
-  trashOutline, 
-  checkmarkDoneOutline 
+import {
+  arrowBackOutline,
+  searchOutline,
+  qrCodeOutline,
+  trashOutline,
+  checkmarkDoneOutline
 } from 'ionicons/icons';
-import { IonBackButton } from "@ionic/angular";
 
 @Component({
   selector: 'app-ingreso',
@@ -57,16 +56,26 @@ import { IonBackButton } from "@ionic/angular";
     IonSpinner
   ]
 })
-export class IngresoPage {
+export class IngresoPage implements OnInit {
 
   razonSocial: string = 'ELECTRAMETAL NORPERU SAC';
   rucProveedor: string = '20536193805';
   propiedad: string = 'ELECTRAMETAL';
   estado: string = 'VACIO';
-  
+
   serieActual: string = '';
   listaCilindros: any[] = [];
   cargando: boolean = false;
+
+  // Variables de Almacén
+  almacenId: number | null = null;
+  observacion: string = '';
+  listaAlmacenes: any[] = [];
+
+  // Variables de Entidades (Clientes / Proveedores)
+  entidadSeleccionadaId: number | null = null;
+  listaEntidades: any[] = [];
+  todasLasEntidades: any[] = [];
 
   constructor(
     private supabaseService: SupabaseService,
@@ -82,8 +91,99 @@ export class IngresoPage {
     });
   }
 
+  async ngOnInit() {
+    // Cargar ambas listas al iniciar la página
+    await Promise.all([
+      this.cargarAlmacenes(),
+      this.cargarEntidades()
+    ]);
+  }
+
   regresar() {
     this.navCtrl.back();
+  }
+
+  // Carga los almacenes desde Supabase
+  async cargarAlmacenes() {
+    const { data, error } = await this.supabaseService.supabase
+      .from('almacenes')
+      .select('id, nombre')
+      .order('nombre', { ascending: true });
+
+    if (!error && data) {
+      this.listaAlmacenes = data;
+      if (this.listaAlmacenes.length > 0) {
+        this.almacenId = this.listaAlmacenes[0].id;
+      }
+    }
+  }
+
+  // Carga las entidades (clientes) desde Supabase
+  async cargarEntidades() {
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('clientes')
+        .select('*');
+
+      if (error) throw error;
+
+      this.todasLasEntidades = data || [];
+
+      if (this.propiedad) {
+        this.onPropiedadChange();
+      }
+    } catch (err) {
+      console.error('Error al cargar entidades:', err);
+    }
+  }
+
+  onPropiedadChange() {
+    this.entidadSeleccionadaId = null;
+
+    if (!this.todasLasEntidades || this.todasLasEntidades.length === 0) {
+      this.listaEntidades = [];
+      return;
+    }
+
+    if (this.propiedad === 'Proveedor') {
+      this.listaEntidades = this.todasLasEntidades.filter((ent: any) => {
+        const doc = String(ent.numero_documento || ent.num_doc || ent.ruc || ent.num_documento || '').trim();
+        return doc.length === 11;
+      });
+    } else if (this.propiedad === 'Cliente') {
+      this.listaEntidades = this.todasLasEntidades.filter((ent: any) => {
+        const doc = String(ent.numero_documento || ent.num_doc || ent.dni || ent.num_documento || '').trim();
+        return doc.length === 8;
+      });
+    } else {
+      this.listaEntidades = [];
+    }
+
+    this.cdRef.detectChanges();
+  }
+
+  buscarEntidadPorDoc(doc: string) {
+    const entidadEncontrada = this.todasLasEntidades.find((ent: any) => {
+      const numeroDoc = String(
+        ent.numero_documento || ent.num_doc || ent.ruc || ent.dni || ent.ruc_dni || ''
+      ).trim();
+      return numeroDoc === doc.trim();
+    });
+
+    if (entidadEncontrada) {
+      this.entidadSeleccionadaId = entidadEncontrada.id;
+    } else {
+      this.entidadSeleccionadaId = null;
+    }
+  }
+
+  filtrarPorDigitos(event: any) {
+    const valor = event.detail.value || '';
+    if (this.propiedad === 'Proveedor' && valor.length === 11) {
+      this.buscarEntidadPorDoc(valor);
+    } else if (this.propiedad === 'Cliente' && valor.length === 8) {
+      this.buscarEntidadPorDoc(valor);
+    }
   }
 
   obtenerUnidadMedida(tipoGas: string): string {
@@ -148,6 +248,9 @@ export class IngresoPage {
         tipo_movimiento: 'INGRESO',
         propiedad: this.propiedad,
         estado_cilindro: this.estado,
+        almacen_id: this.almacenId,
+        observacion: this.observacion,
+        entidad_id: this.entidadSeleccionadaId,
         created_at: new Date()
       }));
 
@@ -177,4 +280,8 @@ export class IngresoPage {
       this.cdRef.detectChanges();
     }
   }
+
+
+
+  
 }

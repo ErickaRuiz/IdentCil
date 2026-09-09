@@ -1,10 +1,10 @@
 <ion-header class="ion-no-border">
   <ion-toolbar class="custom-toolbar">
-  <ion-buttons slot="start">
-  <ion-button (click)="regresar()" class="btn-back">
-    <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
-  </ion-button>
-</ion-buttons>
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" class="btn-back">
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
 
     <ion-title class="brand-title">LISTADO DE CILINDROS</ion-title>
   </ion-toolbar>
@@ -27,27 +27,169 @@
 
   <!-- LISTADO DE TARJETAS COMPACTAS -->
   <div *ngIf="cilindrosFiltrados.length > 0" class="list-container">
-    <div class="cylinder-card" *ngFor="let item of cilindrosFiltrados">
-      <div class="card-info">
-       <div class="row-badges">
-  <span class="badge serie">
-    {{ item.numeroSerie }}
-  </span>
-  <span class="badge gas" [ngClass]="obtenerClaseGas(item.tipoGas)">
-    <ion-icon name="flask-outline"></ion-icon> {{ item.tipoGas }}
-  </span>
-  <span class="badge capacidad" *ngIf="item.capacidad">
-    {{ item.capacidad }}
-  </span>
-</div>
+    <div class="cylinder-card" *ngFor="let item of cilindrosFiltrados" style="position: relative;">
+
+      <!-- CLIC EN LA TARJETA PARA VER DETALLE COMPLETO -->
+      <div class="card-info" (click)="verDetalleCilindro(item)" style="cursor: pointer;">
+        <div class="row-badges">
+          <span class="badge serie">
+            {{ item.numeroSerie || item.numero_serie }}
+          </span>
+          <span class="badge gas" [ngClass]="obtenerClaseGas(item.tipoGas || item.tipo_gas)">
+            <ion-icon name="flask-outline"></ion-icon> {{ item.tipoGas || item.tipo_gas }}
+          </span>
+          <span class="badge capacidad" *ngIf="item.capacidad">
+            {{ item.capacidad }}
+          </span>
+        </div>
         <div class="row-client">
-          <span class="client-name">{{ item.clienteNombre | uppercase }}</span>
+          <span class="client-name">{{ (item.clienteNombre || item.clientes?.nombre_razon_social) | uppercase }}</span>
         </div>
         <div class="row-doc">
-          <span>{{ item.clienteDocTipo || 'DOC' }}: {{ item.clienteDocNum }}</span>
+          <span>{{ item.clienteDocTipo || item.clientes?.tipo_documento || 'DOC' }}: {{ item.clienteDocNum || item.clientes?.num_documento || 'N/A' }}</span>
         </div>
       </div>
+
+      <!-- BOTONES DE ACCIÓN (SUPERPUESTOS Y ACCESIBLES) -->
+      <div class="card-actions" style="position: relative; z-index: 10;">
+        <ion-button fill="clear" color="primary" (click)="$event.stopPropagation(); editarCilindro(item)">
+          <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="$event.stopPropagation(); eliminarCilindro(item)">
+          <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+
     </div>
   </div>
 
 </ion-content>
+
+<!-- MODAL DE DETALLE COMPLETO DEL CILINDRO -->
+<ion-modal [isOpen]="isModalOpen" (didDismiss)="cerrarDetalle()">
+  <ng-template>
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="brand-title">DETALLE DEL CILINDRO</ion-title>
+        <ion-buttons slot="end">
+          <ion-button color="danger" (click)="cerrarDetalle()">Cerrar</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="main-content" *ngIf="cilindroSeleccionado">
+      <div class="detail-card">
+
+        <div class="detail-header">
+          <h2>{{ cilindroSeleccionado.numeroSerie || cilindroSeleccionado.numero_serie }}</h2>
+          <span class="badge gas" [ngClass]="obtenerClaseGas(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas)">
+            {{ cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas }}
+          </span>
+        </div>
+
+        <div class="detail-grid">
+          <!-- TIPO DE GAS -->
+          <div class="detail-item full-width">
+            <span class="label">Tipo de Gas</span>
+            <span class="value">{{ cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas || 'N/A' }}</span>
+          </div>
+
+          <!-- PROPIETARIO / CLIENTE -->
+          <div class="detail-item full-width">
+            <span class="label">Propietario / Empresa</span>
+            <span class="value">{{ cilindroSeleccionado.clienteNombre || cilindroSeleccionado.clientes?.nombre_razon_social || 'N/A' }}</span>
+          </div>
+
+          <!-- DOCUMENTO -->
+          <div class="detail-item full-width">
+            <span class="label">Documento</span>
+            <span class="value">
+              {{ cilindroSeleccionado.clienteDocTipo || cilindroSeleccionado.clientes?.tipo_documento || 'DOC' }}: 
+              {{ cilindroSeleccionado.clienteDocNum || cilindroSeleccionado.clientes?.num_documento || 'N/A' }}
+            </span>
+          </div>
+
+          <!-- MARCA -->
+          <div class="detail-item">
+            <span class="label">Marca</span>
+            <span class="value">{{ cilindroSeleccionado.marca || 'N/A' }}</span>
+          </div>
+
+          <!-- AÑO DE FABRICACIÓN -->
+          <div class="detail-item">
+            <span class="label">Año Fab.</span>
+            <span class="value">
+              {{ cilindroSeleccionado.anio_fabricacion || cilindroSeleccionado.anioFabricacion || 'N/A' }}
+            </span>
+          </div>
+
+          <!-- UNIDAD DE MEDIDA -->
+          <div class="detail-item">
+            <span class="label">Unidad de Medida</span>
+            <span class="value">
+              {{ cilindroSeleccionado.unidad_medida || cilindroSeleccionado.unidadMedida || cilindroSeleccionado.m3 || 'N/A' }}
+            </span>
+          </div>
+
+          <!-- PESO -->
+          <div class="detail-item">
+            <span class="label">Peso</span>
+            <span class="value">
+              {{ cilindroSeleccionado.peso ? cilindroSeleccionado.peso + ' kg' : 'N/A' }}
+            </span>
+          </div>
+
+          <!-- DIÁMETRO -->
+          <div class="detail-item">
+            <span class="label">Diámetro</span>
+            <span class="value">
+              {{ (cilindroSeleccionado.ancho_diametro || cilindroSeleccionado.anchoDiametro) ? (cilindroSeleccionado.ancho_diametro || cilindroSeleccionado.anchoDiametro) + ' cm' : 'N/A' }}
+            </span>
+          </div>
+
+          <!-- ALTURA -->
+          <div class="detail-item">
+            <span class="label">Altura</span>
+            <span class="value">
+              {{ (cilindroSeleccionado.largo_altura || cilindroSeleccionado.largoAltura) ? (cilindroSeleccionado.largo_altura || cilindroSeleccionado.largoAltura) + ' cm' : 'N/A' }}
+            </span>
+          </div>
+
+          <!-- CONTENIDO (SI ES ACETILENO) O LITROS -->
+          <div class="detail-item" *ngIf="(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas) === 'ACETILENO'">
+            <span class="label">Contenido</span>
+            <span class="value">
+              {{ cilindroSeleccionado.contenido ? cilindroSeleccionado.contenido + ' kg' : 'N/A' }}
+            </span>
+          </div>
+
+          <div class="detail-item" *ngIf="(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas) !== 'ACETILENO'">
+            <span class="label">Litros</span>
+            <span class="value">
+              {{ cilindroSeleccionado.litros ? cilindroSeleccionado.litros + ' L' : 'N/A' }}
+            </span>
+          </div>
+
+          <!-- COLOR -->
+          <div class="detail-item">
+            <span class="label">Color</span>
+            <span class="value">{{ cilindroSeleccionado.color || 'N/A' }}</span>
+          </div>
+
+          <!-- PRUEBA HIDROSTÁTICA (PH) -->
+          <div class="detail-item">
+            <span class="label">Prueba Hidr. (PH)</span>
+            <span class="value highlight">{{ cilindroSeleccionado.ph || 'N/A' }}</span>
+          </div>
+
+          <!-- PROCEDENCIA -->
+          <div class="detail-item">
+            <span class="label">Procedencia</span>
+            <span class="value">{{ cilindroSeleccionado.procedencia || 'N/A' }}</span>
+          </div>
+        </div>
+
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

@@ -9,7 +9,7 @@
   border: 1px solid #e2e8f0;
 
   ion-card-content {
-    padding: 12px 14px;
+    padding: 14px;
   }
 }
 
@@ -18,7 +18,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 
     .company-info {
       h2 {
@@ -27,6 +27,7 @@
         font-weight: 800;
         color: #0f172a;
       }
+
       .ruc-text {
         margin: 2px 0 0 0;
         font-size: 12px;
@@ -44,11 +45,37 @@
   .selectors-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
 
-    .custom-select {
-      --highlight-color-focused: #00A859;
-      margin: 0;
+  .full-field {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .custom-select {
+    --highlight-color-focused: #00A859;
+    --border-radius: 8px;
+    margin: 0;
+
+    ion-label {
+      font-weight: 700 !important;
+      color: #475569 !important;
+      font-size: 11.5px !important;
+      letter-spacing: 0.3px;
+    }
+
+    ion-select,
+    ion-input {
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+      --padding-top: 6px;
+      --padding-bottom: 6px;
     }
   }
 }
@@ -131,4 +158,34 @@
       color: #64748b;
     }
   }
+}
+
+.selectors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.full-field {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.custom-select {
+  ion-select {
+    font-size: 0.82rem !important;
+    text-transform: uppercase;
+    
+    &::part(text) {
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+  }
+}
+
+/* Ajuste para el texto dentro del menú desplegable (popover) */
+ion-popover ion-select-option {
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
 }
