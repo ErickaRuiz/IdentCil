@@ -59,7 +59,7 @@
 
   .custom-select {
     --highlight-color-focused: #00A859;
-    --border-radius: 8px;
+    --border-radius: 15px;
     margin: 0;
 
     ion-label {
@@ -114,6 +114,43 @@
     font-weight: 700;
     color: #334155;
     margin: 0 0 8px 4px;
+  }
+}
+
+.cylinder-detail-card {
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  h3 {
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+
+  .info-grid p {
+    color: #475569;
+    font-size: 0.95rem;
+    margin: 8px 0;
+
+    strong {
+      color: #334155;
+      font-weight: 700;
+    }
+
+    span {
+      color: #0f172a;
+      font-weight: 800;
+    }
+  }
+
+  .btn-add-list {
+    margin-top: 14px;
+    --border-radius: 8px;
+    font-weight: 700;
   }
 }
 
@@ -184,8 +221,139 @@
   }
 }
 
-/* Ajuste para el texto dentro del menú desplegable (popover) */
 ion-popover ion-select-option {
   font-size: 0.8rem !important;
   text-transform: uppercase;
+}
+
+body.barcode-scanner-active {
+  --background: transparent !important;
+  background: transparent !important;
+
+  ion-app, 
+  ion-content {
+    --background: transparent !important;
+    background: transparent !important;
+  }
+
+  .custom-card, 
+  .list-container, 
+  ion-header, 
+  ion-footer {
+    display: none !important;
+  }
+}
+
+.scanner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 20px;
+
+  .scan-box {
+    width: 260px;
+    height: 260px;
+    border: 3px solid #00A859;
+    border-radius: 16px;
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
+    margin-top: 20%;
+  }
+
+  .btn-cerrar-escaneo {
+    margin-bottom: 30px;
+    --border-radius: 10px;
+  }
+}
+
+/* BOTÓN GUARDAR INGRESO */
+ion-button.btn-guardar-verde {
+  --background: #00A859 !important;
+  --background-focused: #008f4c !important;
+  --background-activated: #008f4c !important;
+  --color: #ffffff !important;
+  --border-radius: 8px;
+  font-weight: 700;
+  margin-top: 12px;
+  opacity: 1 !important;
+
+  &[disabled],
+  &.button-disabled {
+    --background: #00A859 !important;
+    --color: #ffffff !important;
+    opacity: 0.9 !important;
+  }
+}
+
+/* BOTÓN HISTORIAL (VERDE OSCURO) */
+ion-button.btn-historial-oscuro {
+  --background: #0f5132 !important;
+  --background-hover: #0c4128 !important;
+  --background-focused: #0c4128 !important;
+  --background-activated: #09311e !important;
+  --color: #ffffff !important;
+  --border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem !important;
+  height: 40px !important;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 8px rgba(15, 81, 50, 0.25);
+  text-transform: none;
+
+  ion-icon {
+    font-size: 1.1rem !important;
+    color: #ffffff !important;
+    margin-right: 4px;
+  }
+}
+
+/* ESTILOS DEL MODAL */
+:host ::ng-deep {
+  ion-modal {
+    ion-content {
+      --background: #f8fafc !important;
+    }
+
+    ion-list {
+      background: transparent !important;
+      padding: 12px 14px !important;
+
+      ion-item[button] {
+        --background: #ffffff !important;
+        --border-radius: 12px !important;
+        --border-color: #cbd5e1 !important;
+        --border-style: solid !important;
+        --border-width: 1px !important;
+        --padding-start: 14px !important;
+        --inner-padding-end: 14px !important;
+        margin-bottom: 10px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+
+        h2 {
+          font-size: 0.88rem !important;
+          font-weight: 800 !important;
+          color: #0f172a !important;
+          margin-bottom: 6px !important;
+        }
+
+        p {
+          display: inline-block !important;
+          background: #e6f7ef !important;
+          color: #00A859 !important;
+          font-weight: 700 !important;
+          font-size: 0.75rem !important;
+          padding: 3px 8px !important;
+          border-radius: 6px !important;
+          margin: 0 !important;
+        }
+      }
+    }
+  }
 }

@@ -1,0 +1,81 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #00A859; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" style="--color: #ffffff;">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title style="font-weight: 800; font-size: 1.1rem;">Historial de Ingresos</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding bg-light">
+
+  <ion-refresher slot="fixed" (ionRefresh)="cargarHistorial(); $event.target.complete()">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Indicador de carga -->
+  <div *ngIf="cargando" style="text-align: center; padding: 40px 10px;">
+    <ion-spinner name="crescent" style="color: #00A859; width: 36px; height: 36px;"></ion-spinner>
+    <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">Cargando historial...</p>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!cargando && listaIngresos.length === 0" style="text-align: center; padding: 50px 20px;">
+    <ion-icon name="document-text-outline" style="font-size: 3.5rem; color: #cbd5e1;"></ion-icon>
+    <h3 style="color: #475569; font-size: 1rem; font-weight: 700; margin-top: 10px;">Sin registros</h3>
+    <p style="color: #94a3b8; font-size: 0.85rem;">Aún no se han guardado registros de ingreso de cilindros.</p>
+  </div>
+
+  <!-- Lista de Tarjetas de Historial -->
+  <div *ngIf="!cargando && listaIngresos.length > 0">
+    <ion-card *ngFor="let item of listaIngresos" class="historial-card">
+      <ion-card-content style="padding: 14px;">
+        
+        <!-- Encabezado con Fecha de Ingreso a Planta -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
+            📅 {{ (item.fecha_ingreso || item.created_at) | date:'dd/MM/yyyy hh:mm a' }}
+          </span>
+          <span class="badge-estado">
+            {{ item.motivo || item.estado || 'INGRESO' }}
+          </span>
+        </div>
+
+        <!-- Nombre de Entidad / Cliente / Proveedor -->
+        <h3 class="entidad-title">
+          {{ obtenerNombreEntidad(item) }}
+        </h3>
+
+        <!-- Datos Generales del Ingreso -->
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.8rem; color: #475569;">
+          <span><strong>Propiedad:</strong> {{ item.propiedad || 'No especificado' }}</span>
+          <span *ngIf="item.numero_guia || item.guia_remision"><strong>N° Guía / Doc:</strong> {{ item.numero_guia || item.guia_remision }}</span>
+          <span *ngIf="item.planta || item.sede"><strong>Planta / Sede:</strong> {{ item.planta || item.sede }}</span>
+          <span *ngIf="item.registrado_por || item.usuario"><strong>Registrado por:</strong> {{ item.registrado_por || item.usuario }}</span>
+        </div>
+
+        <!-- Bloque de Cilindros Incluidos -->
+        <div class="cilindros-box">
+          <div class="cilindros-box-header">
+            CILINDROS REGISTRADOS ({{ item.cilindros_ingresados?.length || 0 }}):
+          </div>
+          <div *ngFor="let cil of item.cilindros_ingresados" class="cilindro-row">
+            • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie || cil.numeroSerie || cil.serie }}</strong> 
+            <span *ngIf="cil.tipo_gas || cil.tipoGas"> | {{ cil.tipo_gas || cil.tipoGas }}</span>
+            <span *ngIf="cil.capacidad"> ({{ cil.capacidad }})</span>
+            <span *ngIf="cil.estado_cilindro || cil.estado"> - {{ cil.estado_cilindro || cil.estado }}</span>
+          </div>
+        </div>
+
+        <!-- Observación opcional -->
+        <p *ngIf="item.observacion || item.observaciones" class="observacion-text">
+          📝 {{ item.observacion || item.observaciones }}
+        </p>
+
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+</ion-content>

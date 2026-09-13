@@ -9,7 +9,12 @@
   </ion-toolbar>
 </ion-header>
 
+
 <ion-content class="ion-padding bg-light">
+<ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialIngresos()">
+    <ion-icon name="time-outline" slot="start"></ion-icon>
+    Historial de Ingresos
+  </ion-button>
 
   <ion-card class="custom-card header-card">
     <ion-card-content>
@@ -30,29 +35,116 @@
           <ion-label position="stacked">Propiedad</ion-label>
           <ion-select [(ngModel)]="propiedad" (ionChange)="onPropiedadChange()" interface="popover">
             <ion-select-option value="ELECTRAMETAL">ELECTRAMETAL</ion-select-option>
-            <ion-select-option value="Proveedor">Proveedor</ion-select-option>
+            <ion-select-option value="Proveedor">Empresa</ion-select-option>
             <ion-select-option value="Cliente">Cliente</ion-select-option>
           </ion-select>
         </ion-item>
       </div>
 
-
-      <!-- Segunda Fila: Cliente / Proveedor a Ancho Completo -->
+      <!-- Selector que abre el Modal de búsqueda -->
+      <!-- Selector estilizado para abrir el Modal -->
       <div class="full-field" *ngIf="propiedad !== 'ELECTRAMETAL'">
-        <ion-item fill="outline" class="custom-select">
-          <ion-label position="stacked">
-            {{ propiedad === 'Proveedor' ? 'Proveedor (RUC)' : 'Cliente (DNI / RUC)' }}
-          </ion-label>
-          <ion-select [(ngModel)]="entidadSeleccionadaId" interface="popover" placeholder="Seleccionar opción">
-            <ion-select-option *ngFor="let ent of listaEntidades" [value]="ent.id">
-              {{ (ent.nombre_razon_social || ent.razon_social || ent.nombre || 'Entidad ' + ent.id) | uppercase }}
-              <ng-container *ngWith="(ent.num_documento || ent.numero_documento || ent.ruc || ent.dni) as doc">
-                <span *ngIf="doc"> ({{ doc }})</span>
-              </ng-container>
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
+        <div (click)="abrirModalBuscador()" style="
+      background: #ffffff;
+      border: 1.5 solid #00A859;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 8px rgba(0, 168, 89, 0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+    ">
+
+          <div style="flex: 1; overflow: hidden;">
+            <div
+              style="font-size: 0.72rem; font-weight: 700; color: #00A859; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+              {{ propiedad === 'Proveedor' ? 'Empresa (RUC)' : 'Cliente (DNI)' }}
+            </div>
+
+            <div style="
+        font-size: 0.88rem; 
+        font-weight: 800; 
+        color: #0f172a; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis;
+      ">
+              {{ obtenerNombreEntidadSeleccionada() || 'Toca para buscar...' }}
+            </div>
+          </div>
+
+          <div style="
+      background: #e6f7ef; 
+      color: #00A859; 
+      width: 34px; 
+      height: 34px; 
+      border-radius: 8px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      flex-shrink: 0;
+    ">
+            <ion-icon name="search-outline" style="font-size: 1.1rem;"></ion-icon>
+          </div>
+        </div>
       </div>
+
+      <!-- Modal Buscador de Entidades Estilizado Directo -->
+      <ion-modal [isOpen]="modalAbierto" (didDismiss)="cerrarModalBuscador()">
+        <ng-template>
+          <ion-header class="ion-no-border">
+            <ion-toolbar style="--background: #00A859; --color: #ffffff; padding: 0 4px;">
+              <ion-title style="font-weight: 800; font-size: 1.05rem;">
+                Buscar {{ propiedad === 'Proveedor' ? 'Empresa' : 'Cliente' }}
+              </ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="cerrarModalBuscador()" style="--color: #ffffff; font-weight: 700;">
+                  Cerrar
+                </ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+
+            <ion-toolbar style="--background: #00A859; padding: 0 8px 8px 8px;">
+              <ion-searchbar placeholder="Buscar por Nombre, DNI o RUC..." (ionInput)="filtrarEntidades($event)"
+                [debounce]="250"
+                style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #00A859; padding: 0;">
+              </ion-searchbar>
+            </ion-toolbar>
+          </ion-header>
+
+          <ion-content style="--background: #f8fafc;">
+            <div style="padding: 12px;">
+              <ion-list style="background: transparent; padding: 0;">
+                <div *ngFor="let ent of entidadesFiltradas" (click)="seleccionarEntidadModal(ent)"
+                  style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+
+                  <div>
+                    <div
+                      style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.2;">
+                      {{ (ent.razon_social || ent.nombre_razon_social || ent.nombres || ent.nombre) | uppercase }}
+                    </div>
+                    <div
+                      style="display: inline-block; background: #e6f7ef; color: #00A859; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">
+                      {{ ent.ruc || ent.dni || ent.num_documento || ent.numero_documento }}
+                    </div>
+                  </div>
+
+                  <ion-icon name="chevron-forward-outline" style="color: #cbd5e1; font-size: 1.1rem;"></ion-icon>
+                </div>
+
+                <div *ngIf="entidadesFiltradas.length === 0"
+                  style="text-align: center; padding: 40px 10px; color: #94a3b8; font-weight: 600;">
+                  No se encontraron resultados
+                </div>
+              </ion-list>
+            </div>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
 
       <ion-item fill="outline" class="custom-select">
         <ion-label position="stacked">Estado</ion-label>
@@ -87,21 +179,51 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Tarjeta de Búsqueda -->
+  <!-- Input de Búsqueda -->
   <ion-card class="custom-card">
     <ion-card-content>
       <div class="search-box">
         <ion-input fill="outline" label="Número de Serie / Código" labelPlacement="floating" [(ngModel)]="serieActual"
-          (keyup.enter)="buscarYAgregarCilindro()" placeholder="Escriba la serie aquí">
+          (ionInput)="onInputCodigo($event)" (keyup.enter)="buscarCilindroPorSerie()"
+          placeholder="Ingrese el número de serie">
         </ion-input>
-        <ion-button color="success" class="btn-search" (click)="buscarYAgregarCilindro()">
+
+        <ion-button color="success" class="btn-search" (click)="buscarCilindroPorSerie()">
           <ion-icon slot="icon-only" name="search-outline"></ion-icon>
         </ion-button>
-        <ion-button fill="solid" color="primary" class="btn-scanner" (click)="abrirEscanerML()">
-          <ion-icon slot="icon-only" name="qr-code-outline"></ion-icon>
+
+        <ion-button color="primary" class="btn-scanner" (click)="abrirEscanerML()">
+          <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
         </ion-button>
       </div>
-      <span class="hint-text">Presione ENTER o la lupa para agregar la serie a la lista</span>
+
+      <!-- Botón de Guardar Ingreso estilizado -->
+      <ion-button color="success" expand="block" class="btn-guardar-verde ion-margin-top" (click)="guardarIngreso()">
+        <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+        <span *ngIf="!cargando">
+          <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+          Guardar Ingreso ({{ listaCilindros.length }})
+        </span>
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Ficha de Datos del Cilindro Encontrado -->
+  <ion-card class="custom-card cylinder-detail-card" *ngIf="cilindroEncontrado">
+    <ion-card-content>
+      <h3>Cilindro: {{ cilindroEncontrado.numero_serie }}</h3>
+      <div class="info-grid">
+        <p><strong>Gas:</strong> <span>{{ cilindroEncontrado.tipo_gas }}</span></p>
+        <p><strong>Marca:</strong> <span>{{ cilindroEncontrado.marca || 'N/A' }}</span></p>
+        <p><strong>Capacidad / Litros:</strong> <span>{{ cilindroEncontrado.litros || cilindroEncontrado.contenido ||
+            'N/A' }} {{ cilindroEncontrado.unidad_medida }}</span></p>
+      </div>
+
+      <!-- Botón para pasar de la vista previa a la lista -->
+      <ion-button expand="block" color="primary" class="btn-add-list" (click)="agregarCilindroALista()">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Agregar a la lista
+      </ion-button>
     </ion-card-content>
   </ion-card>
 
@@ -124,15 +246,3 @@
   </div>
 
 </ion-content>
-
-<ion-footer class="ion-no-border" *ngIf="listaCilindros.length > 0">
-  <ion-toolbar class="ion-padding-horizontal ion-padding-bottom">
-    <ion-button expand="block" color="success" size="large" (click)="guardarIngreso()" [disabled]="cargando">
-      <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
-      <span *ngIf="!cargando">
-        <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
-        Guardar Ingreso ({{ listaCilindros.length }})
-      </span>
-    </ion-button>
-  </ion-toolbar>
-</ion-footer>
