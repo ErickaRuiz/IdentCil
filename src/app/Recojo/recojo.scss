@@ -1,42 +1,311 @@
-.form-container {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 1rem 0;
+.bg-light {
+  --background: #f8fafc;
+}
 
-  h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--ion-color-dark);
-    margin-bottom: 0.2rem;
+/* Tarjeta base reutilizable (por si el estilo global .custom-card no está disponible) */
+.custom-card {
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 14px;
+}
+
+/* Cabecera de la tarjeta con logo alineado a la derecha */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .company-info {
+    h2 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .ruc-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 2px 0 0 0;
+      font-weight: 600;
+    }
   }
 
-  p {
-    font-size: 0.9rem;
-    color: var(--ion-color-medium);
-    margin-bottom: 1.5rem;
+  .brand-logo {
+    max-height: 38px;
+    width: auto;
+    object-fit: contain;
   }
 }
 
-.custom-item {
-  --background: var(--ion-color-light, #f4f5f8);
-  --border-radius: 10px;
-  margin-bottom: 1rem;
-  padding-left: 10px;
-  padding-right: 10px;
+.intro-text {
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0 0 14px 0;
+}
 
-  ion-label {
-    font-weight: 600;
-    color: var(--ion-color-step-750, #444);
-    margin-bottom: 5px;
+/* Caja de Búsqueda alineada horizontalmente */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  ion-input {
+    flex: 1;
+    --padding-start: 10px;
+    margin: 0;
+  }
+
+  .btn-search {
+    height: 48px;
+    width: 48px;
+    margin: 0;
+    --border-radius: 10px;
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 1.3rem;
+    }
+  }
+  .btn-scanner {
+    height: 48px;
+    width: 48px;
+    margin: 0;
+    --border-radius: 10px;
+    flex-shrink: 0;
+  }
+}
+
+/* Enlace para abrir el picker de cilindros en salida */
+.ver-lista-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 4px 0 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #348f1d;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+/* Espaciado para los selectores/ítems del formulario */
+ion-item.custom-select {
+  margin-bottom: 14px;
+}
+
+/* FICHA DEL CILINDRO ENCONTRADO */
+.cylinder-detail-card {
+  .cylinder-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .badge-estado {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      background: #ccfbf1;
+      color: #158e21;
+
+      // Color según el tipo de gas (misma paleta que Salida)
+      &.badge-oxigeno {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      &.badge-acetileno {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      &.badge-argon {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      &.badge-nitrogeno {
+        background: #fef9c3;
+        color: #a16207;
+      }
+      &.badge-co2 {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      &.badge-mezcla {
+        background: #e2e8f0;
+        color: #78350f;
+      }
+    }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #475569;
+
+      strong {
+        color: #0f172a;
+      }
+    }
+  }
+
+  /* Estado Actual (quién lo tiene) */
+  .origen-badge-box {
+    margin-top: 10px;
+    background: #fff7ed;
+    border: 1.5px solid #f59e0b;
+    border-radius: 10px;
+    padding: 10px 12px;
+
+    .label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #b45309;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .location-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #92400e;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      ion-icon {
+        font-size: 1.1rem;
+        color: #d97706;
+        flex-shrink: 0;
+      }
+
+      strong {
+        color: #78350f;
+      }
+    }
+  }
+}
+
+/* VISTA PREVIA DEL RETORNO AL ALMACÉN */
+.salida-preview-box {
+  background: #f0fdfa;
+  border: 1.5px solid #0d9488;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+
+  .label-salida {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #0f766e;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .dest-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #115e59;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    ion-icon {
+      font-size: 1.1rem;
+      color: #0d9488;
+      flex-shrink: 0;
+    }
+
+    strong {
+      color: #134e4a;
+    }
   }
 }
 
 .button-group {
-  margin-top: 2rem;
+  margin-top: 4px;
 
   ion-button {
     --border-radius: 10px;
     height: 48px;
-    font-weight: 600;
+    font-weight: 700;
+  }
+}
+
+.hint-text {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  margin: -8px 0 14px 4px;
+  line-height: 1.3;
+}
+// Chip de gas en el modal "Cilindros que salieron (por recoger)"
+.chip-gas {
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  background: #ccfbf1;
+  color: #0f766e;
+
+  &.badge-oxigeno {
+    background: #dcfce7;
+    color: #15803d;
+  }
+  &.badge-acetileno {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  &.badge-argon {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  &.badge-nitrogeno {
+    background: #fef9c3;
+    color: #a16207;
+  }
+  &.badge-co2 {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  &.badge-mezcla {
+    background: #e2e8f0;
+    color: #78350f;
   }
 }

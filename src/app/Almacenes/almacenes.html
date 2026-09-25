@@ -77,6 +77,10 @@
                             <ion-icon name="location-outline"></ion-icon>
                             {{ almacen.ubicacion || 'Sin ubicación registrada' }}
                         </p>
+                        <button class="ver-cilindros-link" (click)="verCilindrosDeAlmacen(almacen)">
+                            <ion-icon name="cube-outline"></ion-icon>
+                            {{ cantidadPorAlmacen[almacen.id] || 0 }} cilindro(s) · Ver detalle
+                        </button>
                     </div>
 
                     <!-- Acciones -->
@@ -99,3 +103,247 @@
     </ion-modal>
 
 </ion-content>
+
+<!-- MODAL: Detalle completo de los cilindros DENTRO de un almacén -->
+<ion-modal [isOpen]="modalCilindrosAbierto" (didDismiss)="cerrarModalCilindros()" [initialBreakpoint]="0.9"
+    [breakpoints]="[0, 0.9, 0.95]">
+    <ng-template>
+        <ion-header class="ion-no-border">
+            <ion-toolbar style="--background: #00A859; --color: #ffffff; padding: 0 4px;">
+                <ion-title style="font-weight: 800; font-size: 1.05rem;">
+                    {{ almacenSeleccionado?.nombre }} ({{ cilindrosDelAlmacen.length }})
+                </ion-title>
+                <ion-buttons slot="end">
+                    <ion-button (click)="cerrarModalCilindros()" style="--color: #ffffff; font-weight: 700;">
+                        Cerrar
+                    </ion-button>
+                </ion-buttons>
+            </ion-toolbar>
+
+            <ion-toolbar style="--background: #00A859; padding: 0 8px 8px 8px;">
+                <ion-searchbar placeholder="Buscar por serie, gas o propietario..."
+                    (ionInput)="filtrarCilindrosDelAlmacen($event)" [debounce]="250"
+                    style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #00A859; padding: 0;">
+                </ion-searchbar>
+            </ion-toolbar>
+        </ion-header>
+
+        <ion-content style="--background: #f8fafc;">
+            <div *ngIf="cargandoCilindros" class="ion-text-center ion-padding">
+                <ion-spinner name="crescent" color="success"></ion-spinner>
+            </div>
+
+            <div *ngIf="!cargandoCilindros" style="padding: 12px;">
+
+                <div *ngIf="cilindrosDelAlmacenFiltrados.length === 0" class="empty-state">
+                    <ion-icon name="cube-outline"></ion-icon>
+                    <p *ngIf="cilindrosDelAlmacen.length === 0">Este almacén no tiene cilindros registrados ahora mismo.</p>
+                    <p *ngIf="cilindrosDelAlmacen.length > 0">No hay cilindros que coincidan con tu búsqueda.</p>
+                </div>
+
+                <div class="cilindro-detalle-card" *ngFor="let c of cilindrosDelAlmacenFiltrados">
+                    <div class="cilindro-detalle-header">
+                        <h4>{{ c.numeroSerie }}</h4>
+                        <span class="badge-gas" [ngClass]="obtenerClaseGas(c.tipoGas)">
+                            <ion-icon name="flask-outline"></ion-icon> {{ c.tipoGas }}
+                        </span>
+                    </div>
+
+                    <div class="cilindro-detalle-propietario">
+                        <ion-icon name="business-outline"></ion-icon>
+                        {{ c.propietarioNombre }} · {{ c.propietarioDocTipo }}: {{ c.propietarioDocNum }}
+                    </div>
+
+                    <div class="cilindro-detalle-grid">
+                        <div class="dato"><span class="label">Marca</span><span class="valor">{{ c.marca || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Año Fab.</span><span class="valor">{{ c.anioFabricacion || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Unidad</span><span class="valor">{{ c.unidadMedida || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Peso</span><span class="valor">{{ c.peso ? (c.peso + ' kg') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Diámetro</span><span class="valor">{{ c.anchoDiametro ? (c.anchoDiametro + ' cm') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Altura</span><span class="valor">{{ c.largoAltura ? (c.largoAltura + ' cm') : 'N/A' }}</span></div>
+                        <div class="dato" *ngIf="c.tipoGas === 'ACETILENO'"><span class="label">Contenido</span><span class="valor">{{ c.contenido ? (c.contenido + ' kg') : 'N/A' }}</span></div>
+                        <div class="dato" *ngIf="c.tipoGas !== 'ACETILENO'"><span class="label">Litros</span><span class="valor">{{ c.litros ? (c.litros + ' L') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Color</span><span class="valor">{{ c.color || 'N/A' }}</span></div>
+       a<ion-header class="ion-no-border">
+    <ion-toolbar style="--background: #00A859; --color: #ffffff;">
+        <ion-buttons slot="start">
+            <ion-button (click)="regresar()" style="--color: #ffffff;">
+                <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+            </ion-button>
+        </ion-buttons>
+        <ion-title>Gestión de Almacenes</ion-title>
+    </ion-toolbar>
+</ion-header>
+
+<!-- Botón compacto para abrir la lista -->
+<div class="btn-container">
+    <ion-button fill="outline" class="btn-compact" (click)="abrirModalAlmacenes()">
+        <ion-icon name="list-outline" slot="start"></ion-icon>
+        Ver Lista
+    </ion-button>
+</div>
+
+<ion-content class="ion-padding bg-light">
+
+    <!-- Formulario de Registro -->
+    <ion-card class="custom-card">
+        <ion-card-content>
+            <h3 class="card-title">Nuevo Almacén / Sede</h3>
+
+            <div class="form-container">
+                <ion-item fill="outline" class="form-item custom-input">
+                    <ion-label position="stacked">Nombre del Almacén</ion-label>
+                    <ion-input [(ngModel)]="nuevoAlmacen.nombre" placeholder="Ej: Planta Huamachuco"></ion-input>
+                </ion-item>
+
+                <ion-item fill="outline" class="form-item custom-input">
+                    <ion-label position="stacked">Ubicación / Dirección</ion-label>
+                    <ion-input [(ngModel)]="nuevoAlmacen.ubicacion" placeholder="Ej: Av. Balta 123"></ion-input>
+                </ion-item>
+
+                <ion-button expand="block" class="btn-guardar" (click)="guardarAlmacen()" [disabled]="cargando">
+                    <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+                    <span *ngIf="!cargando">
+                        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+                        Registrar Almacén
+                    </span>
+                </ion-button>
+
+
+            </div>
+        </ion-card-content>
+    </ion-card>
+
+    <ion-modal [isOpen]="modalAbierto" (didDismiss)="modalAbierto = false" [initialBreakpoint]="0.75"
+        [breakpoints]="[0, 0.75, 0.95]">
+        <ng-template>
+            <ion-header class="ion-no-border">
+                <ion-toolbar style="--background: #ffffff; --color: #0f172a; padding: 0 8px;">
+                    <ion-title style="font-size: 16px; font-weight: 700;">Almacenes ({{ listaAlmacenes.length
+                        }})</ion-title>
+                    <ion-buttons slot="end">
+                        <ion-button color="medium" (click)="modalAbierto = false"
+                            style="font-weight: 600;">Cerrar</ion-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+
+            <ion-content class="modal-content ion-padding">
+                <div *ngIf="cargandoLista" class="ion-text-center ion-padding">
+                    <ion-spinner name="crescent" color="success"></ion-spinner>
+                </div>
+
+                <div class="almacen-card" *ngFor="let almacen of listaAlmacenes">
+                    <div class="almacen-icon">
+                        <ion-icon name="business-outline"></ion-icon>
+                    </div>
+                    <div class="almacen-info">
+                        <h4>{{ almacen.nombre }}</h4>
+                        <p>
+                            <ion-icon name="location-outline"></ion-icon>
+                            {{ almacen.ubicacion || 'Sin ubicación registrada' }}
+                        </p>
+                        <button class="ver-cilindros-link" (click)="verCilindrosDeAlmacen(almacen)">
+                            <ion-icon name="cube-outline"></ion-icon>
+                            {{ cantidadPorAlmacen[almacen.id] || 0 }} cilindro(s) · Ver detalle
+                        </button>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="acciones-card">
+                        <ion-button fill="clear" class="btn-editar" (click)="prepararEdicion(almacen)">
+                            <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                        </ion-button>
+                        <ion-button fill="clear" class="btn-eliminar" (click)="eliminarAlmacen(almacen.id)">
+                            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                        </ion-button>
+                    </div>
+                </div>
+
+                <div *ngIf="!cargandoLista && listaAlmacenes.length === 0" class="empty-state">
+                    <ion-icon name="archive-outline"></ion-icon>
+                    <p>No hay almacenes registrados.</p>
+                </div>
+            </ion-content>
+        </ng-template>
+    </ion-modal>
+
+</ion-content>
+
+<!-- MODAL: Detalle completo de los cilindros DENTRO de un almacén -->
+<ion-modal [isOpen]="modalCilindrosAbierto" (didDismiss)="cerrarModalCilindros()" [initialBreakpoint]="0.9"
+    [breakpoints]="[0, 0.9, 0.95]">
+    <ng-template>
+        <ion-header class="ion-no-border">
+            <ion-toolbar style="--background: #00A859; --color: #ffffff; padding: 0 4px;">
+                <ion-title style="font-weight: 800; font-size: 1.05rem;">
+                    {{ almacenSeleccionado?.nombre }} ({{ cilindrosDelAlmacen.length }})
+                </ion-title>
+                <ion-buttons slot="end">
+                    <ion-button (click)="cerrarModalCilindros()" style="--color: #ffffff; font-weight: 700;">
+                        Cerrar
+                    </ion-button>
+                </ion-buttons>
+            </ion-toolbar>
+
+            <ion-toolbar style="--background: #00A859; padding: 0 8px 8px 8px;">
+                <ion-searchbar placeholder="Buscar por serie, gas o propietario..."
+                    (ionInput)="filtrarCilindrosDelAlmacen($event)" [debounce]="250"
+                    style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #00A859; padding: 0;">
+                </ion-searchbar>
+            </ion-toolbar>
+        </ion-header>
+
+        <ion-content style="--background: #f8fafc;">
+            <div *ngIf="cargandoCilindros" class="ion-text-center ion-padding">
+                <ion-spinner name="crescent" color="success"></ion-spinner>
+            </div>
+
+            <div *ngIf="!cargandoCilindros" style="padding: 12px;">
+
+                <div *ngIf="cilindrosDelAlmacenFiltrados.length === 0" class="empty-state">
+                    <ion-icon name="cube-outline"></ion-icon>
+                    <p *ngIf="cilindrosDelAlmacen.length === 0">Este almacén no tiene cilindros registrados ahora mismo.</p>
+                    <p *ngIf="cilindrosDelAlmacen.length > 0">No hay cilindros que coincidan con tu búsqueda.</p>
+                </div>
+
+                <div class="cilindro-detalle-card" *ngFor="let c of cilindrosDelAlmacenFiltrados">
+                    <div class="cilindro-detalle-header">
+                        <h4>{{ c.numeroSerie }}</h4>
+                        <span class="badge-gas" [ngClass]="obtenerClaseGas(c.tipoGas)">
+                            <ion-icon name="flask-outline"></ion-icon> {{ c.tipoGas }}
+                        </span>
+                    </div>
+
+                    <div class="cilindro-detalle-propietario">
+                        <ion-icon name="business-outline"></ion-icon>
+                        {{ c.propietarioNombre | uppercase }} · {{ c.propietarioDocTipo }}: {{ c.propietarioDocNum }}
+                    </div>
+
+                    <div class="cilindro-detalle-grid">
+                        <div class="dato"><span class="label">Marca</span><span class="valor">{{ c.marca || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Año Fab.</span><span class="valor">{{ c.anioFabricacion || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Unidad</span><span class="valor">{{ c.unidadMedida || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Peso</span><span class="valor">{{ c.peso ? (c.peso + ' kg') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Diámetro</span><span class="valor">{{ c.anchoDiametro ? (c.anchoDiametro + ' cm') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Altura</span><span class="valor">{{ c.largoAltura ? (c.largoAltura + ' cm') : 'N/A' }}</span></div>
+                        <div class="dato" *ngIf="c.tipoGas === 'ACETILENO'"><span class="label">Contenido</span><span class="valor">{{ c.contenido ? (c.contenido + ' kg') : 'N/A' }}</span></div>
+                        <div class="dato" *ngIf="c.tipoGas !== 'ACETILENO'"><span class="label">Litros</span><span class="valor">{{ c.litros ? (c.litros + ' L') : 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Color</span><span class="valor">{{ c.color || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">PH</span><span class="valor highlight">{{ c.ph || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Procedencia</span><span class="valor">{{ c.procedencia || 'N/A' }}</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </ion-content>
+    </ng-template>
+</ion-modal>                 <div class="dato"><span class="label">PH</span><span class="valor highlight">{{ c.ph || 'N/A' }}</span></div>
+                        <div class="dato"><span class="label">Procedencia</span><span class="valor">{{ c.procedencia || 'N/A' }}</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </ion-content>
+    </ng-template>
+</ion-modal>

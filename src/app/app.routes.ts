@@ -59,7 +59,30 @@ export const routes: Routes = [
     loadComponent: () => import('./Almacenes/almacenes').then((m) => m.AlmacenesPage),
   },
   {
-  path: 'historial-ingresos',
-  loadComponent: () => import('./Historial_Ingreso/historial_ingresos').then(m => m.HistorialIngresosPage)
+    path: 'historial-ingresos',
+    loadComponent: () => import('./Historial_Ingreso/historial_ingresos').then(m => m.HistorialIngresosPage)
+  },
+  {
+    path: 'salida',
+    loadComponent: () =>
+      import('./Salida_Electrametal/salida').then(m => m.SalidaPage)
+  },
+  {
+  path: 'historial-salidas',
+  loadComponent: () =>
+    import('./Historial_Salida/historial_salida').then(m => m.HistorialSalidasPage)
+},
+{
+  path: 'reportes',
+  loadComponent: () => import('./Reportes/reportes').then(m => m.ReportesPage)
+},
+{
+  path: 'cilindros_clientes',
+  loadComponent: () => import('./CilindrosClientes/cilindros_clientes').then(m => m.CilindrosClientesPage)
+},
+{
+  path: 'cilindros_proveedores',
+  loadComponent: () => import('./CilindrosProveedores/cilindros_proveedores').then(m => m.CilindrosProveedoresPage)
 }
+
 ];

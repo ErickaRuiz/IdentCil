@@ -1,0 +1,511 @@
+/* RESALTE DE UBICACIÓN ACTUAL */
+.cylinder-detail-card {
+  .cylinder-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+
+    h3 {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .badge-estado {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #475569;
+
+      strong {
+        color: #0f172a;
+      }
+    }
+  }
+
+  /* Estado Actual (Origen) */
+  .origen-badge-box {
+    margin-top: 10px;
+    background: #f0fdf4;
+    border: 1.5px solid #22c55e;
+    border-radius: 10px;
+    padding: 10px 12px;
+
+    .label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #15803d;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .location-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #166534;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      ion-icon {
+        font-size: 1.1rem;
+        color: #16a34a;
+        flex-shrink: 0;
+      }
+
+      strong {
+        color: #14532d;
+      }
+    }
+  }
+
+  /* Vista Previa de Salida (Nuevo Destino) */
+  .salida-preview-box {
+    background: #fff1f2;
+    border: 1.5px solid #e11d48;
+    border-radius: 10px;
+    padding: 10px 12px;
+
+    .label-salida {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #be123c;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .dest-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #9f1239;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      ion-icon {
+        font-size: 1.1rem;
+        color: #e11d48;
+        flex-shrink: 0;
+      }
+
+      strong {
+        color: #881337;
+      }
+    }
+  }
+}
+
+/* Cabecera de la tarjeta con logo alineado a la derecha y más pequeño */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+
+  .company-info {
+    h2 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .ruc-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 2px 0 0 0;
+      font-weight: 600;
+    }
+  }
+
+  /* Logo más chico y alineado a la derecha */
+  .brand-logo {
+    max-height: 38px;
+    width: auto;
+    object-fit: contain;
+  }
+}
+
+/* Botón de Historial en Rojo Oscuro */
+.btn-historial-oscuro {
+  --background: #881337; /* Rojo oscuro / Guinda */
+  --color: #ffffff;
+  --border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 10px rgba(136, 19, 55, 0.25);
+}
+
+/* SELECTOR DE CLIENTE / DESTINO */
+.client-selector-box {
+  background: #ffffff;
+  border: 1.5px solid #e11d48;
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+
+  .selector-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #e11d48;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+
+  .selector-value {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  
+
+  .search-icon-badge {
+    background: #fde8ec;
+    color: #e11d48;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+}
+
+/* RUTA Y FECHA EN LA LISTA ACUMULADA */
+.route-info {
+  font-size: 0.75rem !important;
+  margin-top: 4px !important;
+
+  .origin-text {
+    color: #16a34a;
+    font-weight: 800;
+  }
+
+  .dest-text {
+    color: #e11d48;
+    font-weight: 800;
+  }
+}
+
+.time-text {
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  margin-top: 2px !important;
+}
+
+/* Cabecera de la tarjeta con espacio inferior */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px; /* Separación con la búsqueda */
+
+  .company-info {
+    h2 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .ruc-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 2px 0 0 0;
+      font-weight: 600;
+    }
+  }
+
+  .brand-logo {
+    max-height: 36px;
+    width: auto;
+    object-fit: contain;
+  }
+}
+
+/* Caja de Búsqueda alineada horizontalmente */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 16px; /* Separación con el selector de Destino */
+
+  ion-input {
+    flex: 1;
+    --padding-start: 10px;
+    margin: 0;
+  }
+
+  .btn-search,
+  .btn-scanner {
+    height: 48px;
+    width: 48px;
+    margin: 0;
+    --border-radius: 10px;
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 1.3rem;
+    }
+  }
+}
+
+/* Selector de Cliente con espacio propio */
+.client-selector-box {
+  background: #ffffff;
+  border: 1.5px solid #e11d48;
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 16px; /* Separación con el selector de Estado */
+
+  .selector-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #e11d48;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+
+  .selector-value {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .search-icon-badge {
+    background: #fde8ec;
+    color: #e11d48;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+}
+
+/* Espaciado para los selectores de Ionic */
+ion-item.custom-select {
+  margin-bottom: 14px;
+}
+
+/* Badges genéricos y por Tipo de Gas */
+   /* Badges con fondo y texto según el tipo de gas */
+.badge-estado {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Mismos colores por gas, ahora también para el chip .tag de la lista de salida */
+.badge-estado,
+.tag {
+  &.badge-oxigeno {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  &.badge-acetileno {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  &.badge-nitrogeno {
+    background: #fef9c3;
+    color: #a16207;
+  }
+
+  &.badge-co2 {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  &.badge-mezcla {
+    background: #e2e8f0;
+    color: #78350f;
+  }
+
+  &.badge-argon {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+/* Chip base para .tag (gas y estado) en la lista de "Cilindros Listos para Salir" */
+.tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.tag-estado {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Layout de la tarjeta rediseñada de "Cilindros Listos para Salir" */
+.cylinder-item-card {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.card-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.item-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-index {
+  background: #fde8ec;
+  color: #e11d48;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.item-serie {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.tags-row {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.route-box {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.route-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+
+  .label-route {
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .val-origin {
+    color: #15803d;
+    font-weight: 800;
+  }
+
+  .val-dest {
+    color: #e11d48;
+    font-weight: 800;
+  }
+
+  .icon-origin { color: #15803d; }
+  .icon-arrow { color: #94a3b8; }
+  .icon-store { color: #e11d48; }
+}
+
+.time-footer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+  
+
+  /* Botón Agregar a la Lista en Rojo Oscuro (mismo tono del Historial) */
+  .btn-agregar-lista {
+    --background: #881337;
+    --background-activated: #6b0d2b;
+    --color: #ffffff;
+    --border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    height: 48px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(136, 19, 55, 0.25);
+  }

@@ -1,80 +1,236 @@
 <ion-header [translucent]="true">
-  <ion-toolbar color="primary">
+  <ion-toolbar style="--background: #0d9488; --color: #ffffff;">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
+      <ion-back-button defaultHref="/home" style="--color: #ffffff;"></ion-back-button>
     </ion-buttons>
     <ion-title>Recojo de Cilindros</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <div class="form-container">
-    <h2>Registrar Orden de Recojo</h2>
-    <p>Complete los datos para la recolección de cilindros vacíos o a mantenimiento.</p>
+<ion-content class="ion-padding bg-light">
 
-    <form (ngSubmit)="guardarRecojo()">
-      <!-- Código / Serie del Cilindro -->
-      <ion-item class="custom-item">
-        <ion-label position="stacked">Código o QR del Cilindro *</ion-label>
-        <ion-input 
-          type="text" 
-          placeholder="Ej. CIL-2026-001" 
-          [(ngModel)]="recojo.codigo_qr" 
-          name="codigo_qr" 
-          required>
+  <ion-card class="custom-card header-card">
+    <ion-card-content>
+      <!-- Cabecera de la Empresa -->
+      <div class="header-top">
+        <div class="company-info">
+          <h2>{{ razonSocial }}</h2>
+          <p class="ruc-text">RUC: {{ rucProveedor }}</p>
+        </div>
+        <img src="assets/icon/logo_ele.png" alt="Logo" class="brand-logo" />
+      </div>
+
+      <p class="intro-text">
+        Busca el cilindro que vas a recoger del cliente. Al registrar el recojo,
+        el cilindro vuelve al almacén que elijas, a nombre de {{ razonSocial }}.
+      </p>
+
+      <!-- Búsqueda por Código / Serie -->
+      <div class="search-box">
+        <ion-input fill="outline" label="Código o QR del Cilindro" labelPlacement="floating"
+          [(ngModel)]="recojo.codigo_qr" name="codigo_qr"
+          (keyup.enter)="buscarCilindro()"
+          placeholder="Ej. CIL-2026-001">
         </ion-input>
-      </ion-item>
 
-      <!-- Cliente / Ubicación -->
-      <ion-item class="custom-item">
-        <ion-label position="stacked">Cliente / Sede de Recojo *</ion-label>
-        <ion-input 
-          type="text" 
-          placeholder="Nombre de la empresa o cliente" 
-          [(ngModel)]="recojo.cliente" 
-          name="cliente" 
-          required>
-        </ion-input>
-      </ion-item>
+        <ion-button class="btn-search" style="--background: #0d9488; --color: #ffffff;" (click)="buscarCilindro()" [disabled]="buscando">
+          <ion-spinner *ngIf="buscando" name="crescent"></ion-spinner>
+          <ion-icon *ngIf="!buscando" slot="icon-only" name="search-outline"></ion-icon>
+        </ion-button>
 
-      <!-- Estado en que se Recoge -->
-      <ion-item class="custom-item">
-        <ion-label position="stacked">Estado al Recoger *</ion-label>
-        <ion-select [(ngModel)]="recojo.estado" name="estado">
-          <ion-select-option value="Vacío">Vacío</ion-select-option>
-          <ion-select-option value="Con Fuga / Dañado">Con Fuga / Dañado</ion-select-option>
-          <ion-select-option value="Para Mantenimiento">Para Mantenimiento</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <!-- Motivo del Recojo -->
-      <ion-item class="custom-item">
-        <ion-label position="stacked">Motivo de Recojo *</ion-label>
-        <ion-select [(ngModel)]="recojo.motivo" name="motivo">
-          <ion-select-option value="Recarga">Para Recarga</ion-select-option>
-          <ion-select-option value="Devolución">Devolución de Alquiler</ion-select-option>
-          <ion-select-option value="Inspección">Inspección Periódica</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <!-- Observaciones -->
-      <ion-item class="custom-item">
-        <ion-label position="stacked">Observaciones</ion-label>
-        <ion-textarea 
-          placeholder="Detalles adicionales sobre el estado del cilindro o la entrega..." 
-          [(ngModel)]="recojo.observaciones" 
-          name="observaciones" 
-          rows="3">
-        </ion-textarea>
-      </ion-item>
-
-      <!-- Botón de Guardar -->
-      <div class="button-group">
-        <ion-button expand="block" type="submit" color="primary" [disabled]="cargando">
-          <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
-          <span *ngIf="!cargando">Registrar Recojo</span>
+        <ion-button class="btn-scanner" color="primary" (click)="abrirEscanerML()" [disabled]="buscando">
+          <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
         </ion-button>
       </div>
-    </form>
-  </div>
+
+      <div class="ver-lista-link" (click)="abrirModalListaCilindros()">
+        <ion-icon name="list-outline"></ion-icon>
+        <span>¿No tienes el código? Ver los cilindros que salieron (por recoger)</span>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Ficha del Cilindro Encontrado -->
+  <ion-card class="custom-card cylinder-detail-card" *ngIf="cilindroEncontrado">
+    <ion-card-content>
+      <div class="cylinder-title">
+        <h3>Cilindro: {{ cilindroEncontrado.numero_serie }}</h3>
+        <span class="badge-estado" [ngClass]="obtenerClaseBadgeGas(cilindroEncontrado.tipo_gas)">{{ cilindroEncontrado.tipo_gas || 'GAS' }}</span>
+      </div>
+
+      <div class="info-grid">
+        <p><strong>Marca:</strong> <span>{{ cilindroEncontrado.marca || 'N/A' }}</span></p>
+        <p><strong>Capacidad:</strong> <span>{{ cilindroEncontrado.litros || cilindroEncontrado.contenido || 'N/A' }} {{ cilindroEncontrado.unidad_medida }}</span></p>
+      </div>
+
+      <div class="origen-badge-box">
+        <span class="label">UBICACIÓN ACTUAL REGISTRADA</span>
+        <div class="location-tag">
+          <ion-icon name="person-outline"></ion-icon>
+          <span><strong>Lo tiene / Fue a:</strong> {{ origenEntidadNombre || 'No especificado' }}</span>
+        </div>
+        <div class="location-tag">
+          <ion-icon name="business-outline"></ion-icon>
+          <span><strong>Salió de:</strong> {{ obtenerNombreAlmacenOrigen() || 'No especificado' }}</span>
+        </div>
+        <div class="location-tag">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span><strong>Salió el:</strong> {{ cilindroEncontrado.fecha_ultima_salida ? (cilindroEncontrado.fecha_ultima_salida | date:'dd/MM/yyyy hh:mm a') : 'No registrada' }}</span>
+        </div>
+        <div class="location-tag">
+          <ion-icon name="time-outline"></ion-icon>
+          <span><strong>Estado físico registrado:</strong> {{ cilindroEncontrado.estado_fisico || 'No registrado' }}</span>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <form (ngSubmit)="guardarRecojo()">
+    <ion-card class="custom-card">
+      <ion-card-content>
+
+        <!-- Cliente / Ubicación -->
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Cliente / Lugar de Recojo *</ion-label>
+          <ion-input
+            type="text"
+            placeholder="Se autocompleta al buscar el cilindro"
+            [(ngModel)]="recojo.cliente"
+            name="cliente"
+            required>
+          </ion-input>
+        </ion-item>
+
+        <!-- Almacén de Destino -->
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Almacén al que Regresa *</ion-label>
+          <ion-select [(ngModel)]="almacenDestinoId" name="almacenDestinoId" interface="popover" placeholder="Elige el almacén de destino">
+            <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
+              {{ alm.nombre }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Estado en que se Recoge -->
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Estado al Recoger *</ion-label>
+          <ion-select [(ngModel)]="recojo.estado" name="estado" interface="popover">
+            <ion-select-option value="Vacío">Vacío</ion-select-option>
+            <ion-select-option value="Con Fuga / Dañado">Con Fuga / Dañado</ion-select-option>
+            <ion-select-option value="Para Mantenimiento">Para Mantenimiento</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <p class="hint-text">
+          Los cilindros que están con clientes se prestan vacíos: por eso "Vacío" es la opción por
+          defecto. Cambia esto solo si detectas fuga, daño, o si toca mantenimiento.
+        </p>
+
+        <!-- Motivo del Recojo -->
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Motivo de Recojo *</ion-label>
+          <ion-select [(ngModel)]="recojo.motivo" name="motivo" interface="popover">
+            <ion-select-option value="Recarga">Para Recarga</ion-select-option>
+            <ion-select-option value="Devolución">Devolución de Alquiler</ion-select-option>
+            <ion-select-option value="Inspección">Inspección Periódica</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Observaciones -->
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Observaciones</ion-label>
+          <ion-textarea
+            placeholder="Detalles adicionales sobre el estado del cilindro o la entrega..."
+            [(ngModel)]="recojo.observaciones"
+            name="observaciones"
+            rows="3">
+          </ion-textarea>
+        </ion-item>
+
+        <!-- Vista previa del retorno -->
+        <div class="salida-preview-box ion-margin-top" *ngIf="cilindroEncontrado">
+          <span class="label-salida">ESTE CILINDRO REGRESARÁ A</span>
+          <div class="dest-tag">
+            <ion-icon name="business-outline"></ion-icon>
+            <span><strong>Almacén:</strong> {{ obtenerNombreAlmacenDestino() || 'Selecciona un almacén arriba' }}</span>
+          </div>
+          <div class="dest-tag">
+            <ion-icon name="cube-outline"></ion-icon>
+            <span><strong>A nombre de:</strong> {{ razonSocial }}</span>
+          </div>
+        </div>
+
+        <!-- Botón de Guardar -->
+        <div class="button-group">
+          <ion-button expand="block" type="submit" style="--background: #0d9488; --color: #ffffff;" [disabled]="cargando || !hayCilindroValido()">
+            <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+            <span *ngIf="!cargando">
+              <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+              Registrar Recojo
+            </span>
+          </ion-button>
+        </div>
+
+      </ion-card-content>
+    </ion-card>
+  </form>
+
+  <!-- Modal: Cilindros en Salida (con clientes, listos para recoger) -->
+  <ion-modal [isOpen]="modalListaAbierto" (didDismiss)="cerrarModalListaCilindros()">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar style="--background: #0d9488; --color: #ffffff; padding: 0 4px;">
+          <ion-title style="font-weight: 800; font-size: 1.05rem;">
+            Cilindros que salieron (por recoger)
+          </ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="cerrarModalListaCilindros()" style="--color: #ffffff; font-weight: 700;">
+              Cerrar
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+
+        <ion-toolbar style="--background: #0d9488; padding: 0 8px 8px 8px;">
+          <ion-searchbar placeholder="Buscar por serie, cliente o gas..." (ionInput)="filtrarListaCilindros($event)"
+            [debounce]="250"
+            style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #0d9488; padding: 0;">
+          </ion-searchbar>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content style="--background: #f8fafc;">
+        <div *ngIf="cargandoLista" style="text-align: center; padding: 40px 10px;">
+          <ion-spinner name="crescent" style="color: #0d9488; width: 34px; height: 34px;"></ion-spinner>
+        </div>
+
+        <div style="padding: 12px;" *ngIf="!cargandoLista">
+          <ion-list style="background: transparent; padding: 0;">
+            <div *ngFor="let cil of cilindrosEnSalidaFiltrados" (click)="seleccionarCilindroDeLista(cil)"
+              style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+
+              <div style="flex: 1; overflow: hidden;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">Serie: {{ cil.numero_serie }}</span>
+                  <span class="chip-gas" [ngClass]="obtenerClaseBadgeGas(cil.tipo_gas)">
+                    {{ cil.tipo_gas || 'GAS' }}
+                  </span>
+                </div>
+                <div style="font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 4px;">
+                  <ion-icon name="person-outline" style="font-size: 0.95rem; color: #0d9488;"></ion-icon>
+                  {{ cil._clienteNombre || cil.poseedor_actual || 'Cliente no especificado' }}
+                </div>
+              </div>
+
+              <ion-icon name="chevron-forward-outline" style="color: #cbd5e1; font-size: 1.1rem; flex-shrink: 0;"></ion-icon>
+            </div>
+
+            <div *ngIf="cilindrosEnSalidaFiltrados.length === 0"
+              style="text-align: center; padding: 40px 10px; color: #94a3b8; font-weight: 600;">
+              No hay cilindros pendientes de recojo: ninguno ha salido
+            </div>
+          </ion-list>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
 </ion-content>

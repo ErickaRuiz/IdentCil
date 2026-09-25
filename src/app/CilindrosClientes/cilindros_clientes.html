@@ -1,0 +1,187 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #00A859; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" style="--color: #ffffff;">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title style="font-weight: 800; font-size: 1.05rem;">Cilindros de Clientes</ion-title>
+  </ion-toolbar>
+
+  <ion-toolbar style="--background: #00A859; padding: 0 8px 8px 8px;">
+    <ion-searchbar placeholder="Buscar por nombre o DNI..." [(ngModel)]="filtro"
+      (ionInput)="filtrarClientes($event)" [debounce]="200"
+      style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #00A859; padding: 0;">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding bg-light">
+
+  <p class="subtitulo">
+    <ion-icon name="people-outline"></ion-icon>
+    Clientes registrados como Persona Natural (DNI): sus cilindros propios y los que tienen prestados ahora.
+  </p>
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="estado-vacio">
+    <ion-spinner name="crescent" style="color: #00A859; width: 36px; height: 36px;"></ion-spinner>
+    <p>Cargando clientes...</p>
+  </div>
+
+  <!-- Sin clientes DNI registrados -->
+  <div *ngIf="!cargando && listaClientes.length === 0" class="estado-vacio">
+    <ion-icon name="person-outline"></ion-icon>
+    <h3>Sin clientes con DNI</h3>
+    <p>Aún no hay clientes registrados como Persona Natural (DNI).</p>
+  </div>
+
+  <!-- Sin resultados de búsqueda -->
+  <div *ngIf="!cargando && listaClientes.length > 0 && clientesFiltrados.length === 0" class="estado-vacio">
+    <ion-icon name="search-outline"></ion-icon>
+    <h3>Sin resultados</h3>
+    <p>No hay clientes que coincidan con "{{ filtro }}".</p>
+  </div>
+
+  <!-- Lista de clientes -->
+  <div class="cliente-card" *ngFor="let cliente of clientesFiltrados" (click)="verCilindrosDeCliente(cliente)">
+    <div class="cliente-icon">
+      <ion-icon name="person-outline"></ion-icon>
+    </div>
+
+    <div class="cliente-info">
+      <h4>{{ cliente.nombre }}</h4>
+      <p class="cliente-doc">
+        <ion-icon name="card-outline"></ion-icon> DNI: {{ cliente.numDocumento }}
+      </p>
+      <p class="cliente-contacto" *ngIf="cliente.telefono || cliente.email">
+        <a *ngIf="cliente.telefono" class="link-whatsapp" [href]="enlaceWhatsapp(cliente.telefono)" target="_blank"
+          (click)="$event.stopPropagation()">
+          <ion-icon name="logo-whatsapp"></ion-icon> {{ cliente.telefono }}
+        </a>
+        <span *ngIf="cliente.email"><ion-icon name="mail-outline"></ion-icon> {{ cliente.email }}</span>
+      </p>
+      <div class="cliente-badges">
+        <span class="badge-propios" *ngIf="cliente.cantidadPropios > 0">
+          <ion-icon name="cube-outline"></ion-icon> {{ cliente.cantidadPropios }} propio{{ cliente.cantidadPropios === 1 ? '' : 's' }}
+        </span>
+        <span class="badge-prestados" *ngIf="cliente.cantidadPrestados > 0">
+          <ion-icon name="swap-horizontal-outline"></ion-icon> {{ cliente.cantidadPrestados }} prestado{{ cliente.cantidadPrestados === 1 ? '' : 's' }}
+        </span>
+        <span class="badge-sin-cilindros" *ngIf="cliente.cantidadPropios === 0 && cliente.cantidadPrestados === 0">
+          Sin cilindros
+        </span>
+      </div>
+    </div>
+
+    <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+  </div>
+
+</ion-content>
+
+<!-- MODAL: cilindros de este cliente -->
+<ion-modal [isOpen]="modalAbierto" (didDismiss)="cerrarModal()" [initialBreakpoint]="0.9"
+  [breakpoints]="[0, 0.9, 0.95]">
+  <ng-template>
+    <ion-header class="ion-no-border">
+      <ion-toolbar style="--background: #00A859; --color: #ffffff; padding: 0 4px;">
+        <ion-title style="font-weight: 800; font-size: 1.05rem;">
+          {{ clienteSeleccionado?.nombre }}
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="cerrarModal()" style="--color: #ffffff; font-weight: 700;">
+            Cerrar
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content style="--background: #f8fafc;">
+      <div style="padding: 12px;">
+
+        <div class="cliente-detalle-doc" *ngIf="clienteSeleccionado">
+          <span><ion-icon name="card-outline"></ion-icon> DNI: {{ clienteSeleccionado.numDocumento }}</span>
+          <a *ngIf="clienteSeleccionado.telefono" class="link-whatsapp" [href]="enlaceWhatsapp(clienteSeleccionado.telefono)" target="_blank">
+            <ion-icon name="logo-whatsapp"></ion-icon> {{ clienteSeleccionado.telefono }}
+          </a>
+          <span *ngIf="clienteSeleccionado.direccion"><ion-icon name="location-outline"></ion-icon> {{ clienteSeleccionado.direccion }}</span>
+        </div>
+
+        <div *ngIf="cilindrosPropiosDelCliente.length === 0 && cilindrosPrestadosDelCliente.length === 0" class="estado-vacio">
+          <ion-icon name="archive-outline"></ion-icon>
+          <p>Este cliente no tiene cilindros propios ni prestados en este momento.</p>
+        </div>
+
+        <!-- PRESTADOS: cualquier cilindro que este cliente tenga ahora, sin importar de quién sea -->
+        <ng-container *ngIf="cilindrosPrestadosDelCliente.length > 0">
+          <div class="seccion-header seccion-prestados">
+            <ion-icon name="swap-horizontal-outline"></ion-icon>
+            CILINDROS QUE TIENE PRESTADOS AHORA ({{ cilindrosPrestadosDelCliente.length }})
+          </div>
+
+          <div class="cilindro-detalle-card" *ngFor="let c of cilindrosPrestadosDelCliente">
+            <div class="cilindro-detalle-header">
+              <h4>{{ c.numeroSerie }}</h4>
+              <span class="badge-gas" [ngClass]="obtenerClaseGas(c.tipoGas)">
+                <ion-icon name="flask-outline"></ion-icon> {{ c.tipoGas }}
+              </span>
+            </div>
+            <div class="cilindro-detalle-ubicacion" [ngClass]="c.estadoClase">
+              <ion-icon name="business-outline"></ion-icon>
+              {{ c.estadoTexto }}
+            </div>
+            <div class="cilindro-detalle-fecha" *ngIf="c.fechaMovimiento">
+              <ion-icon name="time-outline"></ion-icon>
+              Se lo llevó el {{ c.fechaMovimiento | date:'dd/MM/yyyy hh:mm a' }}
+            </div>
+            <div class="cilindro-detalle-grid">
+              <div class="dato"><span class="label">Marca</span><span class="valor">{{ c.marca || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Año Fab.</span><span class="valor">{{ c.anioFabricacion || 'N/A' }}</span></div>
+              <div class="dato" *ngIf="c.tipoGas === 'ACETILENO'"><span class="label">Contenido</span><span class="valor">{{ c.contenido ? (c.contenido + ' kg') : 'N/A' }}</span></div>
+              <div class="dato" *ngIf="c.tipoGas !== 'ACETILENO'"><span class="label">Litros</span><span class="valor">{{ c.litros ? (c.litros + ' L') : 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Color</span><span class="valor">{{ c.color || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">PH</span><span class="valor highlight">{{ c.ph || 'N/A' }}</span></div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- PROPIOS: cilindros cuyo dueño registrado es este cliente -->
+        <ng-container *ngIf="cilindrosPropiosDelCliente.length > 0">
+          <div class="seccion-header seccion-propios">
+            <ion-icon name="cube-outline"></ion-icon>
+            CILINDROS QUE LE PERTENECEN ({{ cilindrosPropiosDelCliente.length }})
+          </div>
+
+          <div class="cilindro-detalle-card" *ngFor="let c of cilindrosPropiosDelCliente">
+            <div class="cilindro-detalle-header">
+              <h4>{{ c.numeroSerie }}</h4>
+              <span class="badge-gas" [ngClass]="obtenerClaseGas(c.tipoGas)">
+                <ion-icon name="flask-outline"></ion-icon> {{ c.tipoGas }}
+              </span>
+            </div>
+
+            <div class="cilindro-detalle-ubicacion" [ngClass]="c.estadoClase">
+              <ion-icon name="business-outline"></ion-icon>
+              {{ c.estadoTexto }}
+            </div>
+
+            <div class="cilindro-detalle-grid">
+              <div class="dato"><span class="label">Marca</span><span class="valor">{{ c.marca || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Año Fab.</span><span class="valor">{{ c.anioFabricacion || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Unidad</span><span class="valor">{{ c.unidadMedida || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Peso</span><span class="valor">{{ c.peso ? (c.peso + ' kg') : 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Diámetro</span><span class="valor">{{ c.anchoDiametro ? (c.anchoDiametro + ' cm') : 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Altura</span><span class="valor">{{ c.largoAltura ? (c.largoAltura + ' cm') : 'N/A' }}</span></div>
+              <div class="dato" *ngIf="c.tipoGas === 'ACETILENO'"><span class="label">Contenido</span><span class="valor">{{ c.contenido ? (c.contenido + ' kg') : 'N/A' }}</span></div>
+              <div class="dato" *ngIf="c.tipoGas !== 'ACETILENO'"><span class="label">Litros</span><span class="valor">{{ c.litros ? (c.litros + ' L') : 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Color</span><span class="valor">{{ c.color || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">PH</span><span class="valor highlight">{{ c.ph || 'N/A' }}</span></div>
+              <div class="dato"><span class="label">Procedencia</span><span class="valor">{{ c.procedencia || 'N/A' }}</span></div>
+            </div>
+          </div>
+        </ng-container>
+
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

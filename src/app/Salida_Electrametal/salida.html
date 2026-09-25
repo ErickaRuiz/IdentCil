@@ -1,0 +1,290 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #e11d48; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" style="--color: #ffffff;">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Salida de Cilindros</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding bg-light">
+  <ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialSalidas()">
+    <ion-icon name="time-outline" slot="start"></ion-icon>
+    Historial de Salidas
+  </ion-button>
+
+  <ion-card class="custom-card header-card">
+    <ion-card-content>
+      <!-- Cabecera de la Empresa -->
+      <div class="header-top">
+        <div class="company-info">
+          <h2>{{ razonSocial }}</h2>
+          <p class="ruc-text">RUC: {{ rucProveedor }}</p>
+        </div>
+        <img src="assets/icon/logo_ele.png" alt="Logo" class="brand-logo" />
+      </div>
+
+
+      <div class="search-box">
+        <ion-input fill="outline" label="Número de Serie / Código" labelPlacement="floating" [(ngModel)]="serieActual"
+          (ionInput)="onInputCodigo($event)" (keyup.enter)="buscarCilindroPorSerie()"
+          placeholder="Ingrese el número de serie">
+        </ion-input>
+
+        <ion-button color="danger" class="btn-search" (click)="buscarCilindroPorSerie()">
+          <ion-icon slot="icon-only" name="search-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button color="primary" class="btn-scanner" (click)="abrirEscanerML()">
+          <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <!-- Selector de Cliente / Empresa DESTINO (a quién se le entrega) -->
+      <div class="full-field">
+        <div class="client-selector-box" (click)="abrirModalBuscador()">
+          <div style="flex: 1; overflow: hidden;">
+            <div class="selector-title">Destino: Persona / Empresa que lo llevará</div>
+            <div class="selector-value">
+              {{ obtenerNombreEntidadSeleccionada() || 'Toca para buscar receptor...' }}
+            </div>
+          </div>
+          <div class="search-icon-badge">
+            <ion-icon name="search-outline" style="font-size: 1.1rem;"></ion-icon>
+          </div>
+        </div>
+      </div>
+
+      <!-- Almacén Destino (opcional: solo si el cilindro se transfiere a otro almacén) -->
+      <div class="full-field">
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Almacén Destino (si aplica)</ion-label>
+          <ion-select [(ngModel)]="almacenDestinoId" (ionChange)="onAlmacenDestinoChange()" interface="popover" placeholder="Sin transferencia de almacén">
+            <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
+              {{ alm.nombre }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+
+      <!-- Modal Buscador de Cliente / Empresa -->
+      <ion-modal [isOpen]="modalAbierto" (didDismiss)="cerrarModalBuscador()">
+        <ng-template>
+          <ion-header class="ion-no-border">
+            <ion-toolbar style="--background: #e11d48; --color: #ffffff; padding: 0 4px;">
+              <ion-title style="font-weight: 800; font-size: 1.05rem;">
+                Buscar Cliente / Destinatario
+              </ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="cerrarModalBuscador()" style="--color: #ffffff; font-weight: 700;">
+                  Cerrar
+                </ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+
+            <ion-toolbar style="--background: #e11d48; padding: 0 8px 8px 8px;">
+              <ion-searchbar placeholder="Buscar por Nombre, DNI o RUC..." (ionInput)="filtrarEntidades($event)"
+                [debounce]="250"
+                style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #e11d48; padding: 0;">
+              </ion-searchbar>
+            </ion-toolbar>
+          </ion-header>
+
+          <ion-content style="--background: #f8fafc;">
+            <div style="padding: 12px;">
+              <ion-list style="background: transparent; padding: 0;">
+                <div *ngFor="let ent of entidadesFiltradas" (click)="seleccionarEntidadModal(ent)"
+                  style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+
+                  <div>
+                    <div
+                      style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.2;">
+                      {{ (ent.razon_social || ent.nombre_razon_social || ent.nombres || ent.nombre) | uppercase }}
+                    </div>
+                    <div
+                      style="display: inline-block; background: #fde8ec; color: #e11d48; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">
+                      {{ ent.ruc || ent.dni || ent.num_documento || ent.numero_documento }}
+                    </div>
+                  </div>
+
+                  <ion-icon name="chevron-forward-outline" style="color: #cbd5e1; font-size: 1.1rem;"></ion-icon>
+                </div>
+
+                <div *ngIf="entidadesFiltradas.length === 0"
+                  style="text-align: center; padding: 40px 10px; color: #94a3b8; font-weight: 600;">
+                  No se encontraron resultados
+                </div>
+              </ion-list>
+            </div>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
+      <ion-item fill="outline" class="custom-select">
+        <ion-label position="stacked">Estado al Despachar</ion-label>
+        <ion-select [(ngModel)]="estado" interface="popover">
+          <ion-select-option value="LLENO">LLENO</ion-select-option>
+          <ion-select-option value="VACIO">VACIO</ion-select-option>
+          <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
+          <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Observación -->
+      <div class="full-field">
+        <ion-item fill="outline" class="custom-select">
+          <ion-label position="stacked">Observación</ion-label>
+          <ion-input [(ngModel)]="observacion" placeholder="Ej. Quién lo llevo"></ion-input>
+        </ion-item>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Input de Búsqueda por Serie -->
+  <ion-card class="custom-card">
+    <ion-card-content>
+
+
+      <!-- Botón de Guardar Salida -->
+      <ion-button color="danger" expand="block" class="btn-guardar-rojo ion-margin-top" (click)="guardarSalida()" [disabled]="cargando">
+        <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+        <span *ngIf="!cargando">
+          <ion-icon name="exit-outline" slot="start"></ion-icon>
+          Registrar Salida ({{ listaCilindros.length }})
+        </span>
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Ficha de Ubicación Actual y Transferencia -->
+  <ion-card class="custom-card cylinder-detail-card" *ngIf="cilindroEncontrado">
+    <ion-card-content>
+      <div class="cylinder-title">
+        <h3>Cilindro: {{ cilindroEncontrado.numero_serie }}</h3>
+        <span class="badge-estado" [ngClass]="obtenerClaseBadgeGas(cilindroEncontrado.tipo_gas)">
+          {{ cilindroEncontrado.tipo_gas }}
+        </span>
+      </div>
+
+      <div class="info-grid">
+        <p><strong>Marca:</strong> <span>{{ cilindroEncontrado.marca || 'N/A' }}</span></p>
+        <p><strong>Capacidad:</strong> <span>{{ cilindroEncontrado.litros || cilindroEncontrado.contenido || 'N/A' }} {{
+            cilindroEncontrado.unidad_medida }}</span></p>
+      </div>
+
+      <!-- ESTADO ACTUAL DEL CILINDRO -->
+      <div class="origen-badge-box">
+        <span class="label">UBICACIÓN ACTUAL REGISTRADA</span>
+        <div class="location-tag">
+          <ion-icon name="business-outline"></ion-icon>
+          <span><strong>Almacén:</strong> {{ origenActualNombre || cilindroEncontrado.almacen_actual || 'No
+            especificado' }}</span>
+        </div>
+        <div class="location-tag">
+          <ion-icon name="person-outline"></ion-icon>
+          <span><strong>Poseedor actual:</strong> {{ origenActualEntidadNombre || cilindroEncontrado.poseedor_actual ||
+            'En Planta / Empresa' }}</span>
+        </div>
+        <div class="location-tag">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span><strong>Desde el:</strong> {{ origenActualFecha ? (origenActualFecha | date:'dd/MM/yyyy hh:mm a') : 'No
+            registrada' }}</span>
+        </div>
+
+        <!-- Asignación rápida: solo aparece si no se pudo determinar el almacén -->
+        <div class="asignar-almacen-box" *ngIf="!almacenId">
+          <ion-item fill="outline" class="custom-select" style="--min-height: 38px;">
+            <ion-select [(ngModel)]="almacenAsignacionId" interface="popover" placeholder="Elegir almacén para este cilindro">
+              <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
+                {{ alm.nombre }}
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+          <ion-button size="small" color="success" [disabled]="!almacenAsignacionId" (click)="asignarAlmacenOrigen()">
+            <ion-icon name="save-outline" slot="start"></ion-icon>
+            Asignar almacén
+          </ion-button>
+        </div>
+      </div>
+
+      <!-- PROYECCIÓN DEL MOVIMIENTO DE SALIDA -->
+      <div class="salida-preview-box ion-margin-top">
+        <span class="label-salida">NUEVO DESTINO Y SALIDA EN TIEMPO REAL</span>
+        <div class="dest-tag">
+          <ion-icon name="person-add-outline"></ion-icon>
+          <span><strong>Se entrega a:</strong> {{ obtenerNombreEntidadSeleccionada() || 'Seleccione un destino arriba'
+            }}</span>
+        </div>
+        <div class="dest-tag">
+          <ion-icon name="business-outline"></ion-icon>
+          <span><strong>Almacén destino:</strong> {{ obtenerNombreAlmacenDestino() || 'Sin transferencia (sale de
+            planta)' }}</span>
+        </div>
+        <div class="dest-tag">
+          <ion-icon name="time-outline"></ion-icon>
+          <span><strong>Fecha/Hora salida:</strong> {{ fechaSalidaActual | date:'dd/MM/yyyy hh:mm:ss a' }}</span>
+        </div>
+      </div>
+
+      <!-- BOTÓN DE AGREGAR CON ESTILO ROJO OSCURO -->
+      <ion-button expand="block" class="btn-agregar-lista ion-margin-top" (click)="agregarCilindroALista()">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        AGREGAR A LA LISTA DE SALIDA
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Lista de Cilindros Preparados para Salida -->
+  <div class="list-container" *ngIf="listaCilindros.length > 0">
+    <div class="list-header">
+      <h3>Cilindros Listos para Salir ({{ listaCilindros.length }})</h3>
+    </div>
+
+    <ion-card class="cylinder-item-card" *ngFor="let item of listaCilindros; let i = index">
+      <div class="card-item-header">
+        <div class="item-title-group">
+          <span class="item-index">#{{ i + 1 }}</span>
+          <h4 class="item-serie">Serie: {{ item.numeroSerie }}</h4>
+        </div>
+        <ion-button fill="clear" color="danger" class="btn-delete" (click)="eliminarSerie(i)">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="card-item-body">
+        <div class="tags-row">
+          <span class="tag" [ngClass]="obtenerClaseBadgeGas(item.tipoGas)">
+            {{ item.tipoGas }}
+          </span> <span class="tag tag-estado">{{ item.estado }}</span>
+        </div>
+
+        <div class="route-box">
+          <div class="route-line">
+            <ion-icon name="business-outline" class="icon-origin"></ion-icon>
+            <span class="label-route">De:</span>
+            <span class="val-origin">{{ item.origenNombre || 'Almacén Origen' }}</span>
+          </div>
+          <div class="route-line">
+            <ion-icon name="arrow-forward-outline" class="icon-arrow"></ion-icon>
+            <span class="label-route">Para:</span>
+            <span class="val-dest">{{ item.destinoEntidadNombre || obtenerNombreEntidadSeleccionada() || 'Destino'
+              }}</span>
+          </div>
+          <div class="route-line" *ngIf="item.destinoAlmacenNombre">
+            <ion-icon name="storefront-outline" class="icon-store"></ion-icon>
+            <span class="label-route">Almacén:</span>
+            <span class="val-dest">{{ item.destinoAlmacenNombre }}</span>
+          </div>
+        </div>
+
+        <div class="time-footer">
+          <ion-icon name="time-outline"></ion-icon>
+          <span>{{ item.fechaSalida | date:'dd/MM/yyyy hh:mm a' }}</span>
+        </div>
+      </div>
+    </ion-card>
+  </div>
+
+</ion-content>

@@ -1,18 +1,11 @@
 <ion-header class="ion-no-border">
-  <ion-toolbar style="--background: #00A859; --color: #ffffff;">
+  <ion-toolbar style="--background: #e11d48; --color: #ffffff;">
     <ion-buttons slot="start">
       <ion-button (click)="regresar()" style="--color: #ffffff;">
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title style="font-weight: 800; font-size: 1.1rem;">Historial de Ingresos</ion-title>
-  </ion-toolbar>
-
-  <ion-toolbar style="--background: #00A859; padding: 0 8px 8px 8px;">
-    <ion-searchbar placeholder="Buscar por cliente, almacén, serie, estado..."
-      (ionInput)="filtrarHistorial($event)" [debounce]="250"
-      style="--background: #ffffff; --border-radius: 10px; --box-shadow: 0 2px 8px rgba(0,0,0,0.08); --placeholder-color: #94a3b8; --icon-color: #00A859; padding: 0;">
-    </ion-searchbar>
+    <ion-title style="font-weight: 800; font-size: 1.1rem;">Historial de Salidas</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -24,69 +17,60 @@
 
   <!-- Indicador de carga -->
   <div *ngIf="cargando" style="text-align: center; padding: 40px 10px;">
-    <ion-spinner name="crescent" style="color: #00A859; width: 36px; height: 36px;"></ion-spinner>
+    <ion-spinner name="crescent" style="color: #e11d48; width: 36px; height: 36px;"></ion-spinner>
     <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">Cargando historial...</p>
   </div>
 
-  <!-- Estado vacío (sin registros en absoluto) -->
-  <div *ngIf="!cargando && listaIngresos.length === 0" style="text-align: center; padding: 50px 20px;">
+  <!-- Estado vacío -->
+  <div *ngIf="!cargando && listaSalidas.length === 0" style="text-align: center; padding: 50px 20px;">
     <ion-icon name="document-text-outline" style="font-size: 3.5rem; color: #cbd5e1;"></ion-icon>
     <h3 style="color: #475569; font-size: 1rem; font-weight: 700; margin-top: 10px;">Sin registros</h3>
-    <p style="color: #94a3b8; font-size: 0.85rem;">Aún no se han guardado registros de ingreso de cilindros.</p>
-  </div>
-
-  <!-- Sin resultados de búsqueda -->
-  <div *ngIf="!cargando && listaIngresos.length > 0 && listaIngresosFiltrada.length === 0" style="text-align: center; padding: 50px 20px;">
-    <ion-icon name="search-outline" style="font-size: 3rem; color: #cbd5e1;"></ion-icon>
-    <h3 style="color: #475569; font-size: 1rem; font-weight: 700; margin-top: 10px;">Sin resultados</h3>
-    <p style="color: #94a3b8; font-size: 0.85rem;">No hay registros que coincidan con tu búsqueda.</p>
+    <p style="color: #94a3b8; font-size: 0.85rem;">Aún no se han guardado registros de salida de cilindros.</p>
   </div>
 
   <!-- Lista de Tarjetas de Historial -->
-  <div *ngIf="!cargando && listaIngresosFiltrada.length > 0">
-    <ion-card *ngFor="let item of listaIngresosFiltrada" class="historial-card" (click)="verDetalle(item)" button="true">
+  <div *ngIf="!cargando && listaSalidas.length > 0">
+    <ion-card *ngFor="let item of listaSalidas" class="historial-card" (click)="verDetalle(item)" button="true">
       <ion-card-content style="padding: 14px;">
 
-        <!-- Encabezado con Fecha de Ingreso a Planta -->
+        <!-- Encabezado con Fecha de Salida -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
-            📅 {{ (item.fecha_ingreso || item.created_at) | date:'dd/MM/yyyy hh:mm a' }}
+            📅 {{ item.created_at | date:'dd/MM/yyyy hh:mm a' }}
           </span>
           <span class="badge-estado">
-            {{ item.motivo || item.estado || 'INGRESO' }}
+            {{ item.estado || 'SALIDA' }}
           </span>
         </div>
 
-        <!-- Nombre de Entidad / Cliente / Proveedor -->
+        <!-- Quién se llevó el cilindro -->
         <h3 class="entidad-title">
-          {{ obtenerNombreEntidad(item) }}
+          🚚 {{ obtenerNombreEntidad(item) }}
         </h3>
 
-        <!-- Datos Generales del Ingreso -->
+        <!-- Datos Generales -->
         <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.8rem; color: #475569;">
-          <span><strong>Propiedad:</strong> {{ item.propiedad || 'No especificado' }}</span>
-          <span class="origen-line">📦 <strong>Origen / Almacén:</strong> {{ obtenerNombreAlmacen(item) }}</span>
-          <span *ngIf="item.numero_guia || item.guia_remision"><strong>N° Guía / Doc:</strong> {{ item.numero_guia || item.guia_remision }}</span>
-          <span *ngIf="item.planta || item.sede"><strong>Planta / Sede:</strong> {{ item.planta || item.sede }}</span>
-          <span *ngIf="item.registrado_por || item.usuario"><strong>Registrado por:</strong> {{ item.registrado_por || item.usuario }}</span>
+          <span class="origen-line">📦 <strong>Salió de:</strong> {{ obtenerNombreAlmacen(item) }}</span>
+          <span *ngIf="obtenerNombreAlmacenDestino(item)" class="origen-line">
+            🏭 <strong>Transferido a:</strong> {{ obtenerNombreAlmacenDestino(item) }}
+          </span>
         </div>
 
         <!-- Bloque de Cilindros Incluidos -->
         <div class="cilindros-box">
           <div class="cilindros-box-header">
-            CILINDROS REGISTRADOS ({{ cilindrosVisibles(item).length }}):
+            CILINDROS ENTREGADOS ({{ cilindrosVisibles(item).length }}):
           </div>
           <div *ngFor="let cil of cilindrosVisibles(item)" class="cilindro-row">
-            • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie || cil.numeroSerie || cil.serie }}</strong> 
-            <span *ngIf="cil.tipo_gas || cil.tipoGas"> | {{ cil.tipo_gas || cil.tipoGas }}</span>
+            • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie }}</strong>
+            <span *ngIf="cil.tipo_gas"> | {{ cil.tipo_gas }}</span>
             <span *ngIf="cil.capacidad"> ({{ cil.capacidad }})</span>
-            <span *ngIf="cil.estado_cilindro || cil.estado"> - {{ cil.estado_cilindro || cil.estado }}</span>
           </div>
         </div>
 
         <!-- Observación opcional -->
-        <p *ngIf="item.observacion || item.observaciones" class="observacion-text">
-          📝 {{ item.observacion || item.observaciones }}
+        <p *ngIf="item.observacion" class="observacion-text">
+          📝 {{ item.observacion }}
         </p>
 
         <!-- Acciones: editar / eliminar / ver detalle -->
@@ -104,12 +88,12 @@
     </ion-card>
   </div>
 
-  <!-- Modal de Detalle del Registro -->
+  <!-- Modal de Detalle -->
   <ion-modal [isOpen]="modalDetalleAbierto" (didDismiss)="cerrarDetalle()">
     <ng-template>
       <ion-header class="ion-no-border">
-        <ion-toolbar style="--background: #00A859; --color: #ffffff;">
-          <ion-title style="font-weight: 800; font-size: 1.05rem;">Detalle del Ingreso</ion-title>
+        <ion-toolbar style="--background: #e11d48; --color: #ffffff;">
+          <ion-title style="font-weight: 800; font-size: 1.05rem;">Detalle de la Salida</ion-title>
           <ion-buttons slot="end">
             <ion-button (click)="cerrarDetalle()" style="--color: #ffffff; font-weight: 700;">
               Cerrar
@@ -121,58 +105,44 @@
       <ion-content class="ion-padding" style="--background: #f8fafc;" *ngIf="itemSeleccionado">
 
         <div class="detalle-badge-row">
-          <span class="badge-estado">{{ itemSeleccionado.motivo || itemSeleccionado.estado || 'INGRESO' }}</span>
+          <span class="badge-estado">{{ itemSeleccionado.estado || 'SALIDA' }}</span>
           <span class="detalle-fecha">
-            📅 {{ (itemSeleccionado.fecha_ingreso || itemSeleccionado.created_at) | date:'dd/MM/yyyy hh:mm a' }}
+            📅 {{ itemSeleccionado.created_at | date:'dd/MM/yyyy hh:mm a' }}
           </span>
         </div>
 
-        <h2 class="detalle-entidad">{{ obtenerNombreEntidad(itemSeleccionado) }}</h2>
+        <h2 class="detalle-entidad">🚚 {{ obtenerNombreEntidad(itemSeleccionado) }}</h2>
         <p *ngIf="obtenerDocumentoEntidad(itemSeleccionado)" class="detalle-doc">
-          Ruc: {{ obtenerDocumentoEntidad(itemSeleccionado) }}
+          Doc: {{ obtenerDocumentoEntidad(itemSeleccionado) }}
         </p>
 
         <!-- Origen destacado -->
         <div class="origen-box">
-          <div class="origen-box-label">ORIGEN / ALMACÉN</div>
+          <div class="origen-box-label">SALIÓ DEL ALMACÉN</div>
           <div class="origen-box-value">📦 {{ obtenerNombreAlmacen(itemSeleccionado) }}</div>
         </div>
 
-        <div class="detalle-lista">
-          <div class="detalle-item">
-            <span class="detalle-label">Propiedad</span>
-            <span class="detalle-valor">{{ itemSeleccionado.propiedad || 'No especificado' }}</span>
-          </div>
-          <div class="detalle-item" *ngIf="itemSeleccionado.numero_guia || itemSeleccionado.guia_remision">
-            <span class="detalle-label">N° Guía / Doc</span>
-            <span class="detalle-valor">{{ itemSeleccionado.numero_guia || itemSeleccionado.guia_remision }}</span>
-          </div>
-          <div class="detalle-item" *ngIf="itemSeleccionado.planta || itemSeleccionado.sede">
-            <span class="detalle-label">Planta / Sede</span>
-            <span class="detalle-valor">{{ itemSeleccionado.planta || itemSeleccionado.sede }}</span>
-          </div>
-          <div class="detalle-item" *ngIf="itemSeleccionado.registrado_por || itemSeleccionado.usuario">
-            <span class="detalle-label">Registrado por</span>
-            <span class="detalle-valor">{{ itemSeleccionado.registrado_por || itemSeleccionado.usuario }}</span>
-          </div>
+        <!-- Destino (solo si fue transferencia interna a otro almacén) -->
+        <div class="origen-box" *ngIf="obtenerNombreAlmacenDestino(itemSeleccionado)" style="margin-top: 10px;">
+          <div class="origen-box-label">TRANSFERIDO AL ALMACÉN</div>
+          <div class="origen-box-value">🏭 {{ obtenerNombreAlmacenDestino(itemSeleccionado) }}</div>
         </div>
 
         <!-- Cilindros completos -->
         <div class="cilindros-box" style="margin-top: 14px;">
           <div class="cilindros-box-header">
-            CILINDROS REGISTRADOS ({{ cilindrosVisibles(itemSeleccionado).length }}):
+            CILINDROS ENTREGADOS ({{ cilindrosVisibles(itemSeleccionado).length }}):
           </div>
           <div *ngFor="let cil of cilindrosVisibles(itemSeleccionado)" class="cilindro-row">
-            • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie || cil.numeroSerie || cil.serie }}</strong>
-            <span *ngIf="cil.tipo_gas || cil.tipoGas"> | {{ cil.tipo_gas || cil.tipoGas }}</span>
+            • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie }}</strong>
+            <span *ngIf="cil.tipo_gas"> | {{ cil.tipo_gas }}</span>
             <span *ngIf="cil.capacidad"> ({{ cil.capacidad }})</span>
-            <span *ngIf="cil.estado_cilindro || cil.estado"> - {{ cil.estado_cilindro || cil.estado }}</span>
           </div>
         </div>
 
         <!-- Observación -->
-        <p *ngIf="itemSeleccionado.observacion || itemSeleccionado.observaciones" class="observacion-text" style="margin-top: 14px;">
-          📝 {{ itemSeleccionado.observacion || itemSeleccionado.observaciones }}
+        <p *ngIf="itemSeleccionado.observacion" class="observacion-text" style="margin-top: 14px;">
+          📝 {{ itemSeleccionado.observacion }}
         </p>
 
         <ion-button expand="block" fill="outline" color="medium" style="margin-top: 18px;" (click)="cerrarDetalle(); abrirEditar(itemSeleccionado, $event)">
@@ -188,8 +158,8 @@
   <ion-modal [isOpen]="modalEditarAbierto" (didDismiss)="cerrarEditar()">
     <ng-template>
       <ion-header class="ion-no-border">
-        <ion-toolbar style="--background: #00A859; --color: #ffffff;">
-          <ion-title style="font-weight: 800; font-size: 1.05rem;">Editar Ingreso</ion-title>
+        <ion-toolbar style="--background: #e11d48; --color: #ffffff;">
+          <ion-title style="font-weight: 800; font-size: 1.05rem;">Editar Salida</ion-title>
           <ion-buttons slot="end">
             <ion-button (click)="cerrarEditar()" style="--color: #ffffff; font-weight: 700;">
               Cerrar
@@ -201,7 +171,7 @@
       <ion-content class="ion-padding" style="--background: #f8fafc;" *ngIf="itemEditando">
 
         <p class="detalle-doc" style="margin-bottom: 12px;">
-          {{ obtenerNombreEntidad(itemEditando) }}
+          🚚 {{ obtenerNombreEntidad(itemEditando) }}
         </p>
 
         <ion-item fill="outline" style="margin-bottom: 10px; --border-radius: 10px;">
@@ -211,13 +181,12 @@
             <ion-select-option value="VACIO">VACIO</ion-select-option>
             <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
             <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
-            <ion-select-option value="DEVOLUCION">Devolución</ion-select-option>
           </ion-select>
         </ion-item>
 
         <ion-item fill="outline" style="margin-bottom: 10px; --border-radius: 10px;">
-          <ion-label position="stacked">Almacén Destino</ion-label>
-          <ion-select [(ngModel)]="formEdicion.almacenId" interface="popover" placeholder="Seleccione almacén">
+          <ion-label position="stacked">Almacén Destino (si aplica)</ion-label>
+          <ion-select [(ngModel)]="formEdicion.almacenDestinoId" interface="popover" placeholder="Sin transferencia de almacén">
             <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
               {{ alm.nombre }}
             </ion-select-option>
@@ -233,7 +202,7 @@
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
           <ion-input fill="outline" [(ngModel)]="serieNuevaEdicion" placeholder="Agregar N° de serie"
             (keyup.enter)="agregarCilindroAEdicion()" style="flex: 1;"></ion-input>
-          <ion-button color="success" (click)="agregarCilindroAEdicion()">
+          <ion-button color="danger" (click)="agregarCilindroAEdicion()">
             <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
           </ion-button>
         </div>
@@ -246,8 +215,8 @@
           <div *ngFor="let cil of formEdicion.cilindros; let i = index"
             style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
             <span class="cilindro-row" style="margin: 0;">
-              • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie || cil.numeroSerie || cil.serie }}</strong>
-              <span *ngIf="cil.tipo_gas || cil.tipoGas"> | {{ cil.tipo_gas || cil.tipoGas }}</span>
+              • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie }}</strong>
+              <span *ngIf="cil.tipo_gas"> | {{ cil.tipo_gas }}</span>
               <span *ngIf="cil.capacidad"> ({{ cil.capacidad }})</span>
             </span>
             <ion-button fill="clear" color="danger" size="small" (click)="eliminarCilindroDeEdicion(i)">
@@ -260,7 +229,7 @@
           </div>
         </div>
 
-        <ion-button expand="block" color="success" class="ion-margin-top" (click)="guardarEdicion()" [disabled]="guardandoEdicion">
+        <ion-button expand="block" color="danger" class="ion-margin-top" (click)="guardarEdicion()" [disabled]="guardandoEdicion">
           <ion-spinner *ngIf="guardandoEdicion" name="crescent"></ion-spinner>
           <span *ngIf="!guardandoEdicion">
             <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>

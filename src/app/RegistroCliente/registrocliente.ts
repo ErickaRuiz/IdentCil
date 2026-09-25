@@ -15,7 +15,6 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  IonSpinner,
   IonIcon,
   ToastController 
 } from '@ionic/angular';
@@ -52,8 +51,7 @@ import { SupabaseService } from '../services/supabase';
     IonInput,
     IonSelect,
     IonSelectOption,
-    IonSpinner,
-    IonIcon
+    IonIcon,
   ]
 })
 export class RegistroClienteComponent implements OnInit {

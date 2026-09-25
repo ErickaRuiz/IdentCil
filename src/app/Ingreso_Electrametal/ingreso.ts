@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavController, ToastController, AlertController } from '@ionic/angular';
 import { SupabaseService } from '../services/supabase';
+import { normalizarSerie, obtenerEstado, cargarEstados, estaDentro, haSalido, EstadoCilindro } from '../services/cilindro-estado';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import {
   IonHeader,
@@ -29,7 +30,8 @@ import {
   searchOutline,
   qrCodeOutline,
   trashOutline,
-  checkmarkDoneOutline, checkmarkOutline, cameraOutline, flaskOutline, addCircleOutline, closeCircleOutline, chevronForwardOutline, timeOutline } from 'ionicons/icons';
+  checkmarkDoneOutline, checkmarkOutline, cameraOutline, flaskOutline, addCircleOutline, closeCircleOutline, chevronForwardOutline, timeOutline
+} from 'ionicons/icons';
 import { IonList, IonSearchbar } from "@ionic/angular";
 
 @Component({
@@ -79,6 +81,9 @@ export class IngresoPage implements OnInit {
   listaEntidades: any[] = [];
   todasLasEntidades: any[] = [];
 
+  tipoGasSeleccionado: string = '';
+  marcaSeleccionada: string = '';
+  capacidadSeleccionada: string = '';
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
@@ -88,7 +93,7 @@ export class IngresoPage implements OnInit {
     private router: Router
 
   ) {
-    addIcons({arrowBackOutline,timeOutline,searchOutline,chevronForwardOutline,cameraOutline,checkmarkDoneOutline,addCircleOutline,trashOutline,closeCircleOutline,flaskOutline,qrCodeOutline,checkmarkOutline});
+    addIcons({ arrowBackOutline, timeOutline, searchOutline, chevronForwardOutline, cameraOutline, checkmarkDoneOutline, addCircleOutline, trashOutline, closeCircleOutline, flaskOutline, qrCodeOutline, checkmarkOutline });
   }
 
 
@@ -113,31 +118,31 @@ export class IngresoPage implements OnInit {
   }
 
   async cargarAlmacenes() {
-  try {
-    const { data, error } = await this.supabaseService.supabase
-      .from('almacenes')
-      .select('id, nombre') // Trae la clave primaria y el nombre del almacén
-      .order('nombre', { ascending: true });
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('almacenes')
+        .select('id, nombre') // Trae la clave primaria y el nombre del almacén
+        .order('nombre', { ascending: true });
 
-    if (error) {
-      console.error('Error al obtener almacenes:', error);
-    } else {
-      this.listaAlmacenes = data || [];
-      
-      // Opcional: Seleccionar el primer almacén por defecto
-      if (this.listaAlmacenes.length > 0) {
-        this.almacenId = this.listaAlmacenes[0].id;
+      if (error) {
+        console.error('Error al obtener almacenes:', error);
+      } else {
+        this.listaAlmacenes = data || [];
+
+        // Opcional: Seleccionar el primer almacén por defecto
+        if (this.listaAlmacenes.length > 0) {
+          this.almacenId = this.listaAlmacenes[0].id;
+        }
       }
+    } catch (err) {
+      console.error('Error al conectar con la tabla almacenes:', err);
     }
-  } catch (err) {
-    console.error('Error al conectar con la tabla almacenes:', err);
   }
-}
 
-// Llámalo dentro del ciclo de vida de la página
-ionViewWillEnter() {
-  this.cargarAlmacenes();
-}
+  // Llámalo dentro del ciclo de vida de la página
+  ionViewWillEnter() {
+    this.cargarAlmacenes();
+  }
 
   async cargarEntidades() {
     try {
@@ -238,41 +243,110 @@ ionViewWillEnter() {
   cilindroEncontrado: any = null;
 
   async buscarCilindroPorSerie() {
-    if (!this.serieActual) return;
+    const serieLimpia = normalizarSerie(this.serieActual);
+    if (!serieLimpia) return;
 
-    const { data, error } = await this.supabaseService.supabase
+    // 1. No repetir la serie dentro de la lista que se está armando ahora
+    const existeEnLista = this.listaCilindros.some(c => c.numeroSerie === serieLimpia);
+    if (existeEnLista) {
+      await this.mostrarAlerta(
+        'Serie repetida en la lista',
+        `El número de serie ${serieLimpia} ya fue agregado a la lista actual.`
+      );
+      this.serieActual = '';
+      return;
+    }
+
+    // 2. Estado ACTUAL del cilindro = su ÚLTIMO movimiento en los historiales
+    //    (ingresos, salidas y recojos). Un cilindro repite el ciclo ingreso ->
+    //    salida -> recojo muchas veces, así que haber ingresado antes NO
+    //    bloquea: solo se bloquea si YA está dentro de planta (duplicado).
+    let estado: EstadoCilindro;
+    try {
+      estado = await obtenerEstado(this.supabaseService.supabase, serieLimpia);
+    } catch (err: any) {
+      console.error('Error al verificar el estado del cilindro:', err);
+      await this.mostrarAlerta(
+        'No se pudo verificar',
+        `No se pudo confirmar el estado del cilindro ${serieLimpia}.\n\nDetalle: ${err?.message || err}`
+      );
+      this.serieActual = '';
+      return;
+    }
+
+    if (estaDentro(estado)) {
+      const almacenActual = this.listaAlmacenes.find(a => a.id === estado.almacenId)?.nombre;
+      await this.mostrarAlerta(
+        'Cilindro ya ingresado',
+        `El cilindro ${serieLimpia} ya está DENTRO de planta${almacenActual ? ` (Almacén: ${almacenActual})` : ''}. ` +
+        `Para volver a ingresarlo primero debe salir (Salida) y regresar (Recojo).`
+      );
+      this.serieActual = '';
+      return;
+    }
+
+    if (haSalido(estado)) {
+      this.mostrarToast(
+        `Este cilindro figuraba fuera (${estado.destino || 'con un cliente'}). Se registrará su regreso.`,
+        'medium'
+      );
+    }
+
+    // 3. Datos reales del cilindro desde el inventario (si existe)
+    const { data: cilindro } = await this.supabaseService.supabase
       .from('cilindros')
       .select('*')
-      .eq('numero_serie', this.serieActual.trim())
-      .single();
+      .eq('numero_serie', serieLimpia)
+      .maybeSingle();
 
-    if (data) {
-      this.cilindroEncontrado = data;
-
-      // Agrega directamente al arreglo que evalúa guardarIngreso()
-      this.listaCilindros.push({
-        numeroSerie: data.numero_serie,
-        tipoGas: data.tipo_gas,
-        capacidad: `${data.litros || data.contenido || ''} ${data.unidad_medida || ''}`.trim()
-      });
-
-      this.serieActual = ''; // Limpia el buscador
-      this.cdRef.detectChanges();
-    } else {
-      this.mostrarAlerta('No encontrado', 'El cilindro ingresado no existe.');
+    if (!cilindro && !haSalido(estado)) {
+      this.mostrarToast(
+        'Esta serie no está registrada en el inventario: se ingresará, pero no podrá salir hasta registrarla.',
+        'warning'
+      );
     }
+
+    this.cilindroEncontrado = cilindro
+      ? {
+          numero_serie: serieLimpia,
+          tipo_gas: cilindro.tipo_gas || 'SIN REGISTRAR',
+          marca: cilindro.marca || 'N/A',
+          litros: cilindro.litros || cilindro.contenido || 'N/A',
+          unidad_medida: cilindro.unidad_medida || '',
+          registrado: true
+        }
+      : {
+          numero_serie: serieLimpia,
+          tipo_gas: 'OXÍGENO',
+          marca: 'N/A',
+          litros: 'N/A',
+          unidad_medida: 'L',
+          registrado: false
+        };
+
+    this.cdRef.detectChanges();
   }
 
   agregarCilindroALista() {
     if (!this.cilindroEncontrado) return;
 
+    const serie = this.cilindroEncontrado.numero_serie;
+
+    // Chequeo de seguridad preventivo
+    const yaExiste = this.listaCilindros.some(item => item.numeroSerie === serie);
+    if (yaExiste) {
+      this.mostrarAlerta('Atención', 'Este cilindro ya está en la lista.');
+      return;
+    }
+
     this.listaCilindros.push({
-      numeroSerie: this.cilindroEncontrado.numero_serie,
+      numeroSerie: serie,
       tipoGas: this.cilindroEncontrado.tipo_gas,
-      capacidad: `${this.cilindroEncontrado.litros || this.cilindroEncontrado.contenido || ''} ${this.cilindroEncontrado.unidad_medida || ''}`.trim()
+      capacidad: `${this.cilindroEncontrado.litros || ''} ${this.cilindroEncontrado.unidad_medida || ''}`.trim(),
+      registrado: !!this.cilindroEncontrado.registrado
     });
 
-    this.cilindroEncontrado = null; // Cierra la tarjeta
+    this.cilindroEncontrado = null;
     this.serieActual = '';
     this.cdRef.detectChanges();
   }
@@ -305,11 +379,8 @@ ionViewWillEnter() {
   }
 
   async guardarIngreso() {
-    console.log('=== INICIO GUARDAR INGRESO ===');
-    console.log('Propiedad:', this.propiedad);
-    console.log('Entidad ID:', this.entidadSeleccionadaId);
-    console.log('Almacén ID:', this.almacenId);
-    console.log('Cilindros:', this.listaCilindros);
+    // Evita que un doble toque guarde dos veces el mismo ingreso
+    if (this.cargando) return;
 
     // 1. Validar lista de cilindros
     if (!this.listaCilindros || this.listaCilindros.length === 0) {
@@ -334,41 +405,55 @@ ionViewWillEnter() {
     this.cdRef.detectChanges();
 
     try {
-      // 4. Mapear payload de cilindros para la columna JSONB
+      const series = this.listaCilindros
+        .map(item => normalizarSerie(item.numeroSerie || item.numero_serie))
+        .filter(s => s !== '');
+
+      // 4. Verificación final anti-duplicados: ninguno debe estar ya DENTRO
+      //    (por ejemplo, si otro dispositivo lo ingresó mientras se armaba la lista).
+      const estados = await cargarEstados(this.supabaseService.supabase);
+      const yaDentro = series.filter(s => estaDentro(estados.get(s)));
+
+      if (yaDentro.length > 0) {
+        this.cargando = false;
+        this.cdRef.detectChanges();
+        await this.mostrarAlerta(
+          'Cilindros ya ingresados',
+          `Estos cilindros ya figuran DENTRO de planta: ${yaDentro.join(', ')}. ` +
+          `Quítalos de la lista (basurero) e inténtalo otra vez.`
+        );
+        return;
+      }
+
+      // 5. Mapear payload de cilindros para la columna JSONB
       const cilindrosPayload = this.listaCilindros.map(item => ({
         numero_serie: item.numeroSerie || item.numero_serie || '',
         tipo_gas: item.tipoGas || item.tipo_gas || '',
         capacidad: item.capacidad || item.litros || item.contenido || ''
       }));
 
-      // 5. Obtener ID del usuario autenticado (si aplica)
+      // 6. Usuario autenticado
       const userRes = await this.supabaseService.supabase.auth.getUser();
       const usuarioId = userRes?.data?.user?.id || null;
 
-      // 6. Estructurar objeto final
       const datosIngreso = {
         propiedad: this.propiedad,
         cliente_id: this.propiedad !== 'ELECTRAMETAL' ? this.entidadSeleccionadaId : null,
         estado: this.estado,
-        almacen_id: this.almacenId,
+        almacen_id: Number(this.almacenId),
         observacion: this.observacion ? this.observacion.trim() : null,
         cilindros_ingresados: cilindrosPayload,
         usuario_id: usuarioId
       };
 
-      console.log('Enviando datos a Supabase:', datosIngreso);
-
-      // 7. Insertar en Supabase
-      const { data, error } = await this.supabaseService.supabase
+      // 7. Registrar el movimiento de ingreso. Con este registro el cilindro
+      //    pasa a estar DENTRO: el estado se calcula desde el historial, no
+      //    hace falta actualizar la tabla `cilindros`.
+      const { error } = await this.supabaseService.supabase
         .from('ingreso_cilindros')
-        .insert([datosIngreso])
-        .select();
+        .insert([datosIngreso]);
 
-      if (error) {
-        throw error;
-      }
-
-      console.log('Respuesta Supabase exitosa:', data);
+      if (error) throw error;
 
       await this.mostrarAlerta('¡Éxito!', 'El ingreso de cilindros se ha registrado correctamente.');
       this.limpiarFormulario();
@@ -470,8 +555,8 @@ ionViewWillEnter() {
   }
 
 
-irAHistorialIngresos() {
+  irAHistorialIngresos() {
     // Reemplaza 'historial-ingresos' por la ruta registrada en app.routes.ts
-    this.router.navigate(['/historial-ingresos']); 
+    this.router.navigate(['/historial-ingresos']);
   }
 }

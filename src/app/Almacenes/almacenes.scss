@@ -165,3 +165,126 @@
   height: 36px;
   width: 36px;
 }
+// --- Link "Ver cilindros" dentro de la tarjeta de almacén ---
+.ver-cilindros-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00A859;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 14px;
+  }
+}
+
+// --- Tarjetas de detalle de cilindros por almacén ---
+.cilindro-detalle-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+
+  .cilindro-detalle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+
+    h4 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+  }
+
+  .cilindro-detalle-propietario {
+    font-size: 12.5px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+
+    ion-icon {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  }
+
+  .cilindro-detalle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    .dato {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+
+      .label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+      }
+
+      .valor {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+
+        &.highlight {
+          color: #00A859;
+        }
+      }
+    }
+  }
+}
+
+.badge-gas {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f1f5f9;
+  color: #334155;
+
+  &.gas-oxigeno {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+  &.gas-acetileno {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+  &.gas-argon {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  &.gas-nitrogeno {
+    background-color: #fef9c3;
+    color: #a16207;
+  }
+  &.gas-co2 {
+    background-color: #e2e8f0;
+    color: #334155;
+  }
+  &.gas-mezcla {
+    background-color: #e2e8f0;
+    color: #78350f;
+  }
+}

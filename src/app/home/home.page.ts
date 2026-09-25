@@ -19,8 +19,7 @@ import {
   documentTextOutline, 
   logOutOutline, 
   businessOutline, 
-  peopleOutline 
-} from 'ionicons/icons';
+  peopleOutline, exitOutline } from 'ionicons/icons';
 import { SupabaseService } from '../services/supabase';
 
 @Component({
@@ -49,14 +48,7 @@ export class HomePage implements OnInit {
     private router: Router,
     private supabaseService: SupabaseService
   ) {
-    addIcons({
-      logOutOutline,
-      arrowDownCircleOutline,
-      arrowUpCircleOutline,
-      businessOutline,
-      peopleOutline,
-      documentTextOutline
-    });
+    addIcons({logOutOutline,arrowDownCircleOutline,exitOutline,arrowUpCircleOutline,businessOutline,peopleOutline,documentTextOutline});
   }
 
   async ngOnInit() {
