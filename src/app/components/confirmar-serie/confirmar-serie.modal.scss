@@ -1,0 +1,136 @@
+.toolbar {
+  --background: #00a859;
+  --color: #ffffff;
+
+  ion-button {
+    --color: #ffffff;
+  }
+}
+
+.contenido {
+  --background: #f8fafc;
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #0f172a;
+  margin-bottom: 14px;
+}
+
+.aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eef2f7;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin-bottom: 16px;
+
+  ion-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  &.aviso-ok {
+    background: #e6f7ef;
+    color: #065f3a;
+  }
+
+  &.aviso-alerta {
+    background: #fff4e5;
+    color: #8a4b00;
+  }
+}
+
+.etiqueta {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #00a859;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px;
+}
+
+.serie {
+  // Colores explícitos: la app sigue el tema del sistema y en modo oscuro el
+  // campo heredaba texto blanco sobre el fondo claro del modal, con lo que el
+  // número leído por la IA era prácticamente invisible.
+  --color: #0f172a;
+  --background: #ffffff;
+  --placeholder-color: #94a3b8;
+  --border-color: #cbd5e1;
+  --highlight-color-focused: #00a859;
+  color: #0f172a;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.detalle {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 8px 2px 16px;
+}
+
+.alternativas {
+  margin-bottom: 12px;
+}
+
+.chip {
+  display: inline-block;
+  margin: 0 8px 8px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &.chip-activo {
+    border-color: #00a859;
+    background: #e6f7ef;
+    color: #065f3a;
+  }
+}
+
+.nota {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 18px;
+}
+
+.pie {
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #ffffff;
+
+  ion-button {
+    margin: 4px 0;
+    --border-radius: 10px;
+    height: 48px;
+    font-weight: 700;
+  }
+
+  .btn-confirmar {
+    --background: #00a859;
+    --background-activated: #008f4b;
+  }
+
+  .btn-repetir {
+    --color: #00a859;
+    --border-color: #00a859;
+  }
+}

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -66,7 +66,7 @@ import {
     IonModal
   ]
 })
-export class RegistroCilindrosPage implements OnInit {
+export class RegistroCilindrosPage {
 
   // Control de edición
   cilindroId: string | null = null;
@@ -130,7 +130,6 @@ export class RegistroCilindrosPage implements OnInit {
     });
   }
 
-  async ngOnInit() { }
 
   // Carga ultra rápida ejecutando peticiones concurrentes
   async ionViewWillEnter() {

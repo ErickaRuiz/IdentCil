@@ -6,6 +6,8 @@ import { NavController, ToastController, AlertController } from '@ionic/angular'
 import { SupabaseService } from '../services/supabase';
 import { normalizarSerie, obtenerEstado, cargarEstados, estaDentro, haSalido, EstadoCilindro } from '../services/cilindro-estado';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { IdentificacionFotoService } from '../services/identificacion-foto';
+import { TrazaIA } from '../services/detector-cilindros';
 import {
   IonHeader,
   IonToolbar,
@@ -81,6 +83,12 @@ export class IngresoPage implements OnInit {
   listaEntidades: any[] = [];
   todasLasEntidades: any[] = [];
 
+  // Cómo se identificó el cilindro que se está buscando ahora. Se guarda
+  // con cada cilindro del ingreso para poder medir cuántos se identifican
+  // por foto, por QR o a mano, y cuántas lecturas de la IA se corrigieron.
+  metodoIdentificacion: 'manual' | 'qr' | 'foto' = 'manual';
+  trazaIAActual: TrazaIA | null = null;
+
   tipoGasSeleccionado: string = '';
   marcaSeleccionada: string = '';
   capacidadSeleccionada: string = '';
@@ -90,8 +98,8 @@ export class IngresoPage implements OnInit {
     private toastCtrl: ToastController,
     private cdRef: ChangeDetectorRef,
     private alertController: AlertController,
-    private router: Router
-
+    private router: Router,
+    private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({ arrowBackOutline, timeOutline, searchOutline, chevronForwardOutline, cameraOutline, checkmarkDoneOutline, addCircleOutline, trashOutline, closeCircleOutline, flaskOutline, qrCodeOutline, checkmarkOutline });
   }
@@ -343,11 +351,15 @@ export class IngresoPage implements OnInit {
       numeroSerie: serie,
       tipoGas: this.cilindroEncontrado.tipo_gas,
       capacidad: `${this.cilindroEncontrado.litros || ''} ${this.cilindroEncontrado.unidad_medida || ''}`.trim(),
-      registrado: !!this.cilindroEncontrado.registrado
+      registrado: !!this.cilindroEncontrado.registrado,
+      metodoIdentificacion: this.metodoIdentificacion,
+      ia: this.trazaIAActual
     });
 
     this.cilindroEncontrado = null;
     this.serieActual = '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
     this.cdRef.detectChanges();
   }
 
@@ -365,12 +377,29 @@ export class IngresoPage implements OnInit {
         const codigoLeido = barcodes[0].rawValue;
         if (codigoLeido) {
           this.serieActual = codigoLeido;
+          this.metodoIdentificacion = 'qr';
+          this.trazaIAActual = null;
           await this.buscarCilindroPorSerie();
         }
       }
     } catch (err: any) {
       this.mostrarToast('Error al escanear: ' + (err.message || err), 'danger');
     }
+  }
+
+  /**
+   * Identifica el cilindro con una foto del troquelado. La IA propone el
+   * número y el operario lo confirma antes de seguir; a partir de ahí el
+   * flujo es el mismo que al escribirlo o escanear el QR.
+   */
+  async identificarPorFoto() {
+    const resultado = await this.identificacionFoto.identificar();
+    if (!resultado) return;
+
+    this.serieActual = resultado.serie;
+    this.metodoIdentificacion = 'foto';
+    this.trazaIAActual = resultado.traza;
+    await this.buscarCilindroPorSerie();
   }
 
   eliminarSerie(index: number) {
@@ -429,7 +458,11 @@ export class IngresoPage implements OnInit {
       const cilindrosPayload = this.listaCilindros.map(item => ({
         numero_serie: item.numeroSerie || item.numero_serie || '',
         tipo_gas: item.tipoGas || item.tipo_gas || '',
-        capacidad: item.capacidad || item.litros || item.contenido || ''
+        capacidad: item.capacidad || item.litros || item.contenido || '',
+        // Trazabilidad de la identificación. Va dentro del JSONB, así que no
+        // requiere cambiar el esquema de la tabla.
+        metodo_identificacion: item.metodoIdentificacion || 'manual',
+        ...(item.ia ? { ia: item.ia } : {})
       }));
 
       // 6. Usuario autenticado
@@ -473,6 +506,8 @@ export class IngresoPage implements OnInit {
     this.observacion = '';
     this.cilindroEncontrado = null;
     this.serieActual = '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
   }
 
 
@@ -492,6 +527,8 @@ export class IngresoPage implements OnInit {
   // Detecta cambios en el input en tiempo real
   onInputCodigo(event: any) {
     const valor = event.detail.value || '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
 
     // Limpia el temporizador previo si sigue escribiendo
     if (this.searchTimeout) {

@@ -8,8 +8,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "lint": "ng lint"
+    "test": "ng test --watch=false",
+    "lint": "ng lint",
+    "test:watch": "ng test --watch"
   },
   "private": true,
   "dependencies": {
@@ -21,6 +22,7 @@
     "@angular/router": "19.2.15",
     "@capacitor-mlkit/barcode-scanning": "6.2.0",
     "@capacitor/app": "6.0.3",
+    "@capacitor/camera": "6.1.3",
     "@capacitor/core": "6.2.2",
     "@capacitor/haptics": "6.0.2",
     "@capacitor/keyboard": "6.0.2",
@@ -33,6 +35,8 @@
     "zone.js": "^0.15.1"
   },
   "devDependencies": {
+    "@analogjs/vite-plugin-angular": "2.7.5",
+    "@analogjs/vitest-angular": "2.7.5",
     "@angular/build": "19.2.15",
     "@angular/cli": "19.2.15",
     "@angular/compiler-cli": "19.2.15",
@@ -44,7 +48,8 @@
     "jsdom": "^25.0.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.0",
-    "vitest": "^2.1.9"
+    "vite": "^6.4.3",
+    "vitest": "^3.2.4"
   },
   "description": "An Ionic project"
 }

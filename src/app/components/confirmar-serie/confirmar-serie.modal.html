@@ -1,0 +1,66 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="toolbar">
+    <ion-title>Confirmar número de serie</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cancelar()" aria-label="Cancelar">
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding contenido">
+  <img *ngIf="vistaPrevia" [src]="vistaPrevia" alt="Foto del collarín" class="foto" />
+
+  <div class="aviso" [class.aviso-ok]="coincideConInventario && !sinLectura" [class.aviso-alerta]="sinLectura">
+    <ion-icon [name]="sinLectura ? 'alert-circle-outline' : coincideConInventario ? 'checkmark-circle-outline' : 'information-circle-outline'"></ion-icon>
+    <span>{{ mensaje }}</span>
+  </div>
+
+  <label class="etiqueta" for="serie-confirmada">
+    {{ sinLectura ? 'Escriba el número de serie' : 'Número leído por la IA' }}
+  </label>
+  <ion-input
+    id="serie-confirmada"
+    class="serie"
+    fill="outline"
+    [(ngModel)]="serie"
+    (keyup.enter)="confirmar()"
+    autocapitalize="characters"
+    placeholder="Ej. 19S206055"
+  ></ion-input>
+
+  <p class="detalle" *ngIf="!sinLectura">
+    <span *ngIf="coincideConInventario">Coincide con un cilindro del inventario.</span>
+    <span *ngIf="!coincideConInventario">No se encontró en el inventario conocido.</span>
+    <span *ngIf="confianzaPct !== null"> Confianza de la lectura: {{ confianzaPct }}%.</span>
+  </p>
+
+  <div class="alternativas" *ngIf="alternativas.length">
+    <p class="etiqueta">¿Es alguno de estos?</p>
+    <button
+      type="button"
+      class="chip"
+      *ngFor="let alternativa of alternativas"
+      [class.chip-activo]="serieNormalizada === alternativa"
+      (click)="elegir(alternativa)"
+    >
+      {{ alternativa }}
+    </button>
+  </div>
+
+  <p class="nota">
+    La IA propone el número y usted lo confirma. Nada se registra sin su confirmación.
+  </p>
+</ion-content>
+
+<ion-footer class="ion-no-border pie">
+  <ion-button expand="block" class="btn-confirmar" [disabled]="!serieNormalizada" (click)="confirmar()">
+    <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+    Usar este número
+  </ion-button>
+  <ion-button expand="block" fill="outline" class="btn-repetir" (click)="repetir()">
+    <ion-icon name="camera-reverse-outline" slot="start"></ion-icon>
+    Repetir foto
+  </ion-button>
+</ion-footer>

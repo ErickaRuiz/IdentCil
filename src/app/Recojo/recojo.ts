@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { IdentificacionFotoService } from '../services/identificacion-foto';
+import { TrazaIA } from '../services/detector-cilindros';
 import {
   IonHeader,
   IonToolbar,
@@ -106,6 +108,11 @@ export class RecojoComponent {
   cilindrosEnSalidaFiltrados: any[] = [];
   terminoBusquedaLista: string = '';
 
+  // Cómo se identificó el cilindro (foto, QR, lista o a mano) y, si fue por
+  // foto, la traza de la IA. Se guarda en el reingreso que deja el recojo.
+  metodoIdentificacion: 'manual' | 'qr' | 'foto' | 'lista' = 'manual';
+  trazaIAActual: TrazaIA | null = null;
+
   recojo = {
     codigo_qr: '',
     cliente: '',
@@ -119,7 +126,8 @@ export class RecojoComponent {
     private toastController: ToastController,
     private alertController: AlertController,
     private router: Router,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({
       searchOutline,
@@ -332,6 +340,8 @@ export class RecojoComponent {
    */
   seleccionarCilindroDeLista(cil: any) {
     this.recojo.codigo_qr = cil.numero_serie;
+    this.metodoIdentificacion = 'lista';
+    this.trazaIAActual = null;
     this.cilindroEncontrado = cil;
     this.origenEntidadNombre = cil._clienteNombre || 'Cliente no especificado';
     this.recojo.cliente = this.origenEntidadNombre;
@@ -463,12 +473,35 @@ export class RecojoComponent {
         const codigoLeido = barcodes[0].rawValue;
         if (codigoLeido) {
           this.recojo.codigo_qr = codigoLeido;
+          this.metodoIdentificacion = 'qr';
+          this.trazaIAActual = null;
           await this.buscarCilindro();
         }
       }
     } catch (err: any) {
       this.mostrarToast('Error al escanear: ' + (err.message || err), 'danger');
     }
+  }
+
+  /**
+   * Identifica el cilindro con una foto del troquelado. La IA propone el
+   * número y el operario lo confirma antes de seguir; a partir de ahí el
+   * flujo es el mismo que al escribirlo o escanear el QR.
+   */
+  async identificarPorFoto() {
+    const resultado = await this.identificacionFoto.identificar();
+    if (!resultado) return;
+
+    this.recojo.codigo_qr = resultado.serie;
+    this.metodoIdentificacion = 'foto';
+    this.trazaIAActual = resultado.traza;
+    await this.buscarCilindro();
+  }
+
+  /** Escribir a mano anula el origen de una foto, QR o lista previos. */
+  alEscribirCodigo() {
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
   }
 
   async guardarRecojo() {
@@ -582,7 +615,12 @@ export class RecojoComponent {
           cilindros_ingresados: [{
             numero_serie: normalizarSerie(serie),
             tipo_gas: cil.tipo_gas || '',
-            capacidad: `${cil.litros || cil.contenido || ''} ${cil.unidad_medida || ''}`.trim()
+            capacidad: `${cil.litros || cil.contenido || ''} ${cil.unidad_medida || ''}`.trim(),
+            // Trazabilidad de la identificación. Va aquí, en el JSONB del
+            // reingreso, y no en la tabla `recojos`: esa tabla tiene columnas
+            // fijas y un campo desconocido haría fallar el guardado.
+            metodo_identificacion: this.metodoIdentificacion,
+            ...(this.trazaIAActual ? { ia: this.trazaIAActual } : {})
           }],
           usuario_id: usuarioId
         }]);
@@ -607,6 +645,8 @@ export class RecojoComponent {
     this.cilindroEncontrado = null;
     this.origenEntidadNombre = '';
     this.almacenDestinoId = null;
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
   }
 
   async mostrarToast(mensaje: string, color: string) {

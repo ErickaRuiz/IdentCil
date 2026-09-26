@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { NavController, ToastController, AlertController } from '@ionic/angular';
 import { SupabaseService } from '../services/supabase';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { IdentificacionFotoService } from '../services/identificacion-foto';
+import { TrazaIA } from '../services/detector-cilindros';
 import { normalizarSerie, obtenerEstado, cargarEstados, haSalido, EstadoCilindro } from '../services/cilindro-estado';
 import {
   IonHeader,
@@ -82,6 +84,11 @@ export class SalidaPage implements OnInit {
   listaCilindros: any[] = [];
   cargando: boolean = false;
 
+  // Cómo se identificó el cilindro que se está buscando ahora (foto, QR o a
+  // mano) y, si fue por foto, la traza de la IA. Se guarda con cada cilindro.
+  metodoIdentificacion: 'manual' | 'qr' | 'foto' = 'manual';
+  trazaIAActual: TrazaIA | null = null;
+
   // Almacén de ORIGEN: ya NO se elige manualmente, se detecta al buscar el cilindro
   almacenId: number | null = null;
   observacion: string = '';
@@ -121,7 +128,8 @@ export class SalidaPage implements OnInit {
     private toastCtrl: ToastController,
     private cdRef: ChangeDetectorRef,
     private alertController: AlertController,
-    private router: Router
+    private router: Router,
+    private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({ arrowBackOutline, timeOutline, searchOutline, cameraOutline, chevronForwardOutline, exitOutline, businessOutline, personOutline, calendarOutline, saveOutline, personAddOutline, addCircleOutline, trashOutline, arrowForwardOutline, storefrontOutline, locationSharp, checkmarkDoneOutline, closeCircleOutline, flaskOutline, qrCodeOutline, checkmarkOutline });
   }
@@ -341,6 +349,8 @@ export class SalidaPage implements OnInit {
   // --- Búsqueda / escaneo de cilindros ---
   onInputCodigo(event: any) {
     const valor = event.detail.value || '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
 
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
@@ -510,11 +520,15 @@ export class SalidaPage implements OnInit {
       destinoAlmacenId: this.almacenDestinoId,
       destinoAlmacenNombre: this.obtenerNombreAlmacenDestino(),
       destinoEntidadNombre: this.obtenerNombreEntidadSeleccionada(),
-      fechaSalida: new Date()
+      fechaSalida: new Date(),
+      metodoIdentificacion: this.metodoIdentificacion,
+      ia: this.trazaIAActual
     });
 
     this.cilindroEncontrado = null;
     this.serieActual = '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
     this.origenActualNombre = '';
     this.origenActualEntidadNombre = '';
     this.origenActualEntidadId = null;
@@ -536,12 +550,29 @@ export class SalidaPage implements OnInit {
         const codigoLeido = barcodes[0].rawValue;
         if (codigoLeido) {
           this.serieActual = codigoLeido;
+          this.metodoIdentificacion = 'qr';
+          this.trazaIAActual = null;
           await this.buscarCilindroPorSerie();
         }
       }
     } catch (err: any) {
       this.mostrarToast('Error al escanear: ' + (err.message || err), 'danger');
     }
+  }
+
+  /**
+   * Identifica el cilindro con una foto del troquelado. La IA propone el
+   * número y el operario lo confirma antes de seguir; a partir de ahí el
+   * flujo es el mismo que al escribirlo o escanear el QR.
+   */
+  async identificarPorFoto() {
+    const resultado = await this.identificacionFoto.identificar();
+    if (!resultado) return;
+
+    this.serieActual = resultado.serie;
+    this.metodoIdentificacion = 'foto';
+    this.trazaIAActual = resultado.traza;
+    await this.buscarCilindroPorSerie();
   }
 
   eliminarSerie(index: number) {
@@ -642,7 +673,10 @@ export class SalidaPage implements OnInit {
         capacidad: item.capacidad || item.litros || item.contenido || '',
         origen_almacen_id: item.origenAlmacenId ?? null,
         origen_nombre: item.origenNombre || '',
-        destino: destinoTexto
+        destino: destinoTexto,
+        // Trazabilidad de la identificación, dentro del JSONB: sin migración.
+        metodo_identificacion: item.metodoIdentificacion || 'manual',
+        ...(item.ia ? { ia: item.ia } : {})
       }));
 
       const userRes = await this.supabaseService.supabase.auth.getUser();
@@ -688,6 +722,8 @@ export class SalidaPage implements OnInit {
     this.observacion = '';
     this.cilindroEncontrado = null;
     this.serieActual = '';
+    this.metodoIdentificacion = 'manual';
+    this.trazaIAActual = null;
     this.entidadSeleccionadaId = null;
     this.almacenId = null;
     this.almacenDestinoId = null;

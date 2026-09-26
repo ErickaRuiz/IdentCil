@@ -29,6 +29,7 @@
       <div class="search-box">
         <ion-input fill="outline" label="Código o QR del Cilindro" labelPlacement="floating"
           [(ngModel)]="recojo.codigo_qr" name="codigo_qr"
+          (ionInput)="alEscribirCodigo()"
           (keyup.enter)="buscarCilindro()"
           placeholder="Ej. CIL-2026-001">
         </ion-input>
@@ -38,10 +39,15 @@
           <ion-icon *ngIf="!buscando" slot="icon-only" name="search-outline"></ion-icon>
         </ion-button>
 
-        <ion-button class="btn-scanner" color="primary" (click)="abrirEscanerML()" [disabled]="buscando">
+        <ion-button class="btn-scanner" color="primary" (click)="abrirEscanerML()" [disabled]="buscando" aria-label="Escanear código QR">
+          <ion-icon slot="icon-only" name="qr-code-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button class="btn-scanner btn-foto" (click)="identificarPorFoto()" [disabled]="buscando" aria-label="Identificar por foto del troquelado">
           <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
         </ion-button>
       </div>
+      <p class="hint-identificacion">Escriba el código, escanee el QR o fotografíe el troquelado.</p>
 
       <div class="ver-lista-link" (click)="abrirModalListaCilindros()">
         <ion-icon name="list-outline"></ion-icon>

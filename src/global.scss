@@ -34,4 +34,29 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
+
+/* La app se diseñó sólo en claro: las pantallas fijan fondos claros y textos
+   oscuros. Con la paleta oscura automática Ionic oscurecía sus componentes
+   (tarjetas, selects, inputs) pero no esos textos, y en móviles con modo
+   oscuro la cabecera de Ingreso y otros campos quedaban ilegibles. Se fija el
+   tema claro, que además se lee mejor al sol. Para ofrecer modo oscuro habría
+   que pasar antes los colores de cada pantalla a variables. */
+:root {
+  color-scheme: light;
+}
+
+/* --- Identificación por foto del troquelado --------------------------------
+   Botón compartido por las pantallas de ingreso, salida y recojo. Usa un color
+   propio para distinguirlo del botón de búsqueda (verde) y del QR (azul). */
+.btn-foto {
+  --background: #0e7490;
+  --background-activated: #0c5f75;
+  --color: #ffffff;
+}
+
+.hint-identificacion {
+  margin: 6px 2px 0;
+  font-size: 11px;
+  color: #64748b;
+}

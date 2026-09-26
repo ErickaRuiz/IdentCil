@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectorRef, NgZone, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { 
@@ -23,7 +23,7 @@ import { SupabaseService } from '../services/supabase';
     IonContent, IonIcon, 
   ]
 })
-export class PerfilPage {
+export class PerfilPage implements OnInit {
   nombre: string = '';
   genero: string = '';
   email: string = '';

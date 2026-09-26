@@ -192,10 +192,15 @@
           <ion-icon slot="icon-only" name="search-outline"></ion-icon>
         </ion-button>
 
-        <ion-button color="primary" class="btn-scanner" (click)="abrirEscanerML()">
+        <ion-button color="primary" class="btn-scanner" (click)="abrirEscanerML()" aria-label="Escanear código QR">
+          <ion-icon slot="icon-only" name="qr-code-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button class="btn-scanner btn-foto" (click)="identificarPorFoto()" aria-label="Identificar por foto del troquelado">
           <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
         </ion-button>
       </div>
+      <p class="hint-identificacion">Escriba el número, escanee el QR o fotografíe el troquelado.</p>
 
       <!-- Botón de Guardar Ingreso estilizado -->
       <ion-button color="success" expand="block" class="btn-guardar-verde ion-margin-top" (click)="guardarIngreso()">

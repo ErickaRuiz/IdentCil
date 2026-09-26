@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavController } from '@ionic/angular';
@@ -50,7 +50,7 @@ import { arrowBackOutline, addCircleOutline, trashOutline, listOutline, business
     IonSearchbar
   ]
 })
-export class AlmacenesPage implements OnInit {
+export class AlmacenesPage {
 
   nuevoAlmacen = {
     nombre: '',
@@ -85,7 +85,6 @@ export class AlmacenesPage implements OnInit {
     addIcons({ arrowBackOutline, addCircleOutline, listOutline, businessOutline, locationOutline, createOutline, trashOutline, archiveOutline, cubeOutline, flaskOutline, chevronForwardOutline, closeOutline, searchOutline });
   }
 
- ngOnInit() {}
 
   regresar() {
     this.navCtrl.back();
