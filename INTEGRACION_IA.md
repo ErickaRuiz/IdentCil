@@ -68,6 +68,20 @@ por la IP del equipo que ejecuta el servicio, por ejemplo
 En producción el servicio debe servirse por **HTTPS**: Android e iOS bloquean
 por defecto las llamadas HTTP en claro.
 
+### Servicio desplegado en AWS
+
+El microservicio está publicado en AWS ECS Express Mode y
+`src/environments/environment.prod.ts` ya apunta a él:
+
+```
+https://ai-52f21abaa0674bb88aa7544cd71eadec.ecs.us-east-1.on.aws
+```
+
+Una compilación de producción (`ng build`, o la que use Capacitor para
+generar el APK) lo usa automáticamente. Si el servicio se borra y se vuelve a
+crear, AWS le asigna otra URL y hay que actualizarla en ese archivo. Cómo se
+despliega y cuánto cuesta: `npl_ai/docs/DESPLIEGUE_AWS.md`.
+
 ## Trazabilidad
 
 Cada cilindro de un ingreso, una salida o el reingreso de un recojo guarda
@@ -197,7 +211,51 @@ servicio de IA (`*.unit.test.ts`).
 | `supabase/politicas_rls.sql` | Políticas de acceso para Supabase |
 | `vitest.config.mts`, `src/test-setup.ts` | Configuración de las pruebas |
 
-Dependencia nueva: `@capacitor/camera@6.1.3` (compatible con Capacitor 6).
-Cuando se añadan las plataformas nativas (`npx cap add android`), hay que
-declarar el permiso de cámara en `AndroidManifest.xml` y la descripción de uso
-en `Info.plist` de iOS.
+Dependencias nuevas: `@capacitor/camera@6.1.3` y `@capacitor/android@6.2.2`
+(compatibles con Capacitor 6).
+
+## APK de pruebas (Android)
+
+El proyecto Android está en `android/`, con el identificador
+`com.identcil.app`, el permiso de cámara del escáner de QR y la configuración
+que pide `@capacitor-mlkit/barcode-scanning`.
+
+**Requisitos:** Android Studio (incluye el SDK) y **JDK 17**. Capacitor 6 usa
+Gradle 8.2.1, que no arranca con JDK 21. En Android Studio: *Settings → Build,
+Execution, Deployment → Build Tools → Gradle → Gradle JDK* → una versión 17 (la
+opción *Download JDK…* la instala).
+
+**Compilar:**
+
+```bash
+npm install
+npx ng build            # producción: apunta al servicio de AWS
+npx cap sync android    # copia la web compilada al proyecto Android
+npx cap open android    # abre Android Studio
+```
+
+En Android Studio: *Build → Build App Bundle(s) / APK(s) → Build APK(s)*. El
+archivo queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+Desde la terminal, con JDK 17 instalado:
+
+```bash
+cd android && JAVA_HOME=$(/usr/libexec/java_home -v 17) ./gradlew assembleDebug
+```
+
+**Instalar en el teléfono:** copie el APK al teléfono y ábralo; Android pedirá
+permitir "instalar apps de origen desconocido" para esa aplicación. Con el
+teléfono conectado por USB y la depuración activada, también vale
+`adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+
+Tras cada cambio en la app hay que repetir `npx ng build` y `npx cap sync
+android` antes de volver a compilar el APK.
+
+**En el teléfono:**
+
+- Hace falta conexión a internet: la foto se analiza en AWS y los datos están
+  en Supabase.
+- La primera vez que se use el QR, Android puede tener que descargar el
+  escáner de Google: la app avisa y basta con reintentarlo en unos segundos.
+- Un APK de depuración sirve para pruebas internas. Para la Play Store haría
+  falta uno firmado con una clave propia.

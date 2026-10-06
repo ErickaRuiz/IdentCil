@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">IdentCil</string>
+    <string name="title_activity_main">IdentCil</string>
+    <string name="package_name">com.identcil.app</string>
+    <string name="custom_url_scheme">com.identcil.app</string>
+</resources>

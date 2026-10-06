@@ -6,6 +6,7 @@ import { NavController, ToastController, AlertController } from '@ionic/angular'
 import { SupabaseService } from '../services/supabase';
 import { normalizarSerie, obtenerEstado, cargarEstados, estaDentro, haSalido, EstadoCilindro } from '../services/cilindro-estado';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { MENSAJE_ESCANER_DESCARGANDO, prepararEscanerQR } from '../services/escaner-qr';
 import { IdentificacionFotoService } from '../services/identificacion-foto';
 import { TrazaIA } from '../services/detector-cilindros';
 import {
@@ -368,6 +369,11 @@ export class IngresoPage implements OnInit {
       const status = await BarcodeScanner.requestPermissions();
       if (!status.camera) {
         this.mostrarToast('Permiso de cámara denegado.', 'warning');
+        return;
+      }
+
+      if (!(await prepararEscanerQR())) {
+        this.mostrarToast(MENSAJE_ESCANER_DESCARGANDO, 'warning');
         return;
       }
 
