@@ -42,6 +42,12 @@
             {{ item.capacidad }}
           </span>
         </div>
+        <div class="row-ph" *ngIf="item.phInfo">
+          <span class="badge ph" [ngClass]="'ph-' + item.phInfo.estado">
+            <ion-icon [name]="item.phInfo.estado === 'vigente' ? 'checkmark-circle-outline' : 'alert-circle-outline'"></ion-icon>
+            {{ item.phInfo.texto }}
+          </span>
+        </div>
         <div class="row-client">
           <span class="client-name">{{ (item.clienteNombre || item.clientes?.nombre_razon_social) | uppercase }}</span>
         </div>
@@ -66,7 +72,7 @@
 </ion-content>
 
 <!-- MODAL DE DETALLE COMPLETO DEL CILINDRO -->
-<ion-modal [isOpen]="isModalOpen" (didDismiss)="cerrarDetalle()">
+<ion-modal [isOpen]="isModalOpen" (didPresent)="generarCodigoBarras()" (didDismiss)="cerrarDetalle()">
   <ng-template>
     <ion-header class="ion-no-border">
       <ion-toolbar class="custom-toolbar">
@@ -85,6 +91,15 @@
           <span class="badge gas" [ngClass]="obtenerClaseGas(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas)">
             {{ cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas }}
           </span>
+        </div>
+
+        <!-- ALERTA DE PRUEBA HIDROSTÁTICA -->
+        <div class="ph-alert" *ngIf="cilindroSeleccionado.phInfo" [ngClass]="'ph-' + cilindroSeleccionado.phInfo.estado">
+          <ion-icon [name]="cilindroSeleccionado.phInfo.estado === 'vigente' ? 'checkmark-circle-outline' : 'alert-circle-outline'"></ion-icon>
+          <div class="ph-alert-text">
+            <strong>{{ cilindroSeleccionado.phInfo.texto }}</strong>
+            <span>Vence: {{ cilindroSeleccionado.phInfo.fechaVenc }}</span>
+          </div>
         </div>
 
         <div class="detail-grid">
@@ -131,6 +146,14 @@
             </span>
           </div>
 
+          <!-- CONTENIDO: al costado de la unidad de medida (acetileno siempre en kg) -->
+          <div class="detail-item">
+            <span class="label">Capacidad</span>
+            <span class="value">
+              {{ cilindroSeleccionado.contenido ? cilindroSeleccionado.contenido + ' ' + (((cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas) === 'ACETILENO') ? 'kg' : (cilindroSeleccionado.unidad_medida || cilindroSeleccionado.unidadMedida || cilindroSeleccionado.m3 || '')) : 'N/A' }}
+            </span>
+          </div>
+
           <!-- PESO -->
           <div class="detail-item">
             <span class="label">Peso</span>
@@ -155,14 +178,7 @@
             </span>
           </div>
 
-          <!-- CONTENIDO (SI ES ACETILENO) O LITROS -->
-          <div class="detail-item" *ngIf="(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas) === 'ACETILENO'">
-            <span class="label">Contenido</span>
-            <span class="value">
-              {{ cilindroSeleccionado.contenido ? cilindroSeleccionado.contenido + ' kg' : 'N/A' }}
-            </span>
-          </div>
-
+          <!-- LITROS (solo gases que no son acetileno) -->
           <div class="detail-item" *ngIf="(cilindroSeleccionado.tipoGas || cilindroSeleccionado.tipo_gas) !== 'ACETILENO'">
             <span class="label">Litros</span>
             <span class="value">
@@ -186,6 +202,26 @@
           <div class="detail-item">
             <span class="label">Procedencia</span>
             <span class="value">{{ cilindroSeleccionado.procedencia || 'N/A' }}</span>
+          </div>
+        </div>
+
+        <!-- CÓDIGO DE BARRAS DE LA SERIE -->
+        <div class="barcode-section">
+          <span class="label">Código de barras (Serie)</span>
+
+          <div class="barcode-box">
+            <canvas id="barcodeCanvas"></canvas>
+          </div>
+
+          <div class="barcode-actions">
+            <ion-button expand="block" fill="outline" (click)="descargarCodigoImagen()">
+              <ion-icon name="image-outline" slot="start"></ion-icon>
+              Imagen (PNG)
+            </ion-button>
+            <ion-button expand="block" (click)="descargarCodigoPDF()">
+              <ion-icon name="document-text-outline" slot="start"></ion-icon>
+              PDF ticket
+            </ion-button>
           </div>
         </div>
 

@@ -266,3 +266,79 @@ ion-alert .alert-radio-label {
     user-select: none;
   }
 }
+/* El número de serie se muestra tal cual se escribió (mayúsculas y minúsculas) */
+.form-card .input-group .custom-input-item ion-input.input-serie {
+  text-transform: none;
+}
+
+/* --- Aviso de serie duplicada --- */
+.item-serie-duplicada {
+  --border-color: #ef4444;
+  --highlight-color-focused: #ef4444;
+}
+
+.spinner-serie {
+  width: 18px;
+  height: 18px;
+  color: #00A859;
+}
+
+.alerta-duplicado {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 6px 0 16px;
+
+  .alerta-duplicado-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    margin-bottom: 10px;
+
+    ion-icon {
+      font-size: 1.15rem;
+    }
+  }
+
+  .alerta-duplicado-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .dato {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+
+      .label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #991b1b;
+        text-transform: uppercase;
+        opacity: 0.75;
+      }
+
+      .valor {
+        font-size: 13px;
+        font-weight: 600;
+        color: #7f1d1d;
+
+        &.highlight {
+          color: #b91c1c;
+        }
+      }
+    }
+  }
+
+  .btn-usar-existente {
+    --border-color: #b91c1c;
+    --color: #b91c1c;
+    font-weight: 700;
+    margin: 0;
+  }
+}

@@ -16,14 +16,23 @@ import {
   IonModal
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { 
-  arrowBackOutline, 
-  searchOutline, 
-  flaskOutline, 
-  createOutline, 
+import {
+  arrowBackOutline,
+  searchOutline,
+  flaskOutline,
+  createOutline,
   trashOutline,
-  closeOutline 
+  closeOutline,
+  imageOutline,
+  documentTextOutline,
+  alertCircleOutline,
+  timeOutline,
+  checkmarkCircleOutline
 } from 'ionicons/icons';
+
+// Librerías de código de barras y PDF
+import JsBarcode from 'jsbarcode';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-ver-lista-cilindros',
@@ -62,13 +71,18 @@ export class VerListaCilindrosPage implements OnInit {
     private alertCtrl: AlertController,
     private router: Router
   ) {
-    addIcons({ 
-      arrowBackOutline, 
-      searchOutline, 
-      flaskOutline, 
-      createOutline, 
+    addIcons({
+      arrowBackOutline,
+      searchOutline,
+      flaskOutline,
+      createOutline,
       trashOutline,
-      closeOutline 
+      closeOutline,
+      imageOutline,
+      documentTextOutline,
+      alertCircleOutline,
+      timeOutline,
+      checkmarkCircleOutline
     });
   }
 
@@ -123,8 +137,7 @@ export class VerListaCilindrosPage implements OnInit {
       tipoGas: item.tipo_gas || item.tipoGas || 'NO ESPECIFICADO',
       marca: item.marca,
       anio_fabricacion: item.anio_fabricacion || item.anioFabricacion,
-     // En verlistacilindros.ts -> procesarCilindros()
-m3: item.unidad_medida || item.m3 || item.unidadMedida || 'N/A',
+      m3: item.unidad_medida || item.m3 || item.unidadMedida || 'N/A',
       peso: item.peso,
       ancho_diametro: item.ancho_diametro || item.anchoDiametro,
       largo_altura: item.largo_altura || item.largoAltura,
@@ -136,7 +149,11 @@ m3: item.unidad_medida || item.m3 || item.unidadMedida || 'N/A',
       capacidad: item.capacidad,
       clienteNombre: item.clientes?.nombre_razon_social || 'SIN CLIENTE',
       clienteDocTipo: item.clientes?.tipo_documento || 'DOC',
-      clienteDocNum: item.clientes?.num_documento || '-'
+      clienteDocNum: item.clientes?.num_documento || '-',
+      phInfo: this.calcularPH(
+        item.anio_fabricacion || item.anioFabricacion,
+        item.ph
+      )
     }));
 
     if (this.filtroCilindro) {
@@ -163,9 +180,9 @@ m3: item.unidad_medida || item.m3 || item.unidadMedida || 'N/A',
       const cliente = (c.clienteNombre || '').toLowerCase();
       const doc = (c.clienteDocNum || '').toLowerCase();
 
-      return serie.includes(termino) || 
-             gas.includes(termino) || 
-             cliente.includes(termino) || 
+      return serie.includes(termino) ||
+             gas.includes(termino) ||
+             cliente.includes(termino) ||
              doc.includes(termino);
     });
   }
@@ -193,12 +210,157 @@ m3: item.unidad_medida || item.m3 || item.unidadMedida || 'N/A',
     this.cilindroSeleccionado = null;
   }
 
-  // REDIRECCIÓN CORREGIDA SEGÚN TUS RUTAS DECLARADAS: /registrocilindros/:id
+
+  // ===================== PRUEBA HIDROSTÁTICA (PH) =====================
+
+  // Calcula cuánto falta (o cuánto lleva vencida) la prueba hidrostática.
+  // Usa el año de fabricación (ej. "08/2020") + los años del PH (ej. "CADA 10 AÑOS PH").
+  // Si el PH no indica años, asume 10.
+  calcularPH(anioFab: any, ph: any): {
+    estado: 'vencida' | 'critica' | 'proxima' | 'vigente';
+    texto: string;
+    fechaVenc: string;
+  } | null {
+    if (!anioFab) return null;
+
+    const txtFab = String(anioFab).trim();
+    let mes = 1;
+    let anio = 0;
+
+    // Formatos aceptados: MM/YYYY, MM-YYYY, YYYY-MM, YYYY/MM, YYYY
+    let m = txtFab.match(/^(\d{1,2})\s*[\/\-]\s*(\d{4})$/);
+    if (m) {
+      mes = parseInt(m[1], 10);
+      anio = parseInt(m[2], 10);
+    } else {
+      m = txtFab.match(/^(\d{4})\s*[\/\-]\s*(\d{1,2})$/);
+      if (m) {
+        anio = parseInt(m[1], 10);
+        mes = parseInt(m[2], 10);
+      } else {
+        m = txtFab.match(/^(\d{4})$/);
+        if (m) anio = parseInt(m[1], 10);
+      }
+    }
+
+    if (!anio || mes < 1 || mes > 12) return null;
+
+    const matchAnios = String(ph || '').match(/(\d+)\s*A[ÑN]OS?/i);
+    const aniosPH = matchAnios ? parseInt(matchAnios[1], 10) : 10;
+
+    // Vence el último día del mes de fabricación + años del PH
+    const venc = new Date(anio + aniosPH, mes, 0);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const fechaVenc = `${String(venc.getMonth() + 1).padStart(2, '0')}/${venc.getFullYear()}`;
+    const vencida = venc.getTime() < hoy.getTime();
+
+    // Diferencia en años / meses / días
+    const desde = vencida ? venc : hoy;
+    const hasta = vencida ? hoy : venc;
+
+    let meses = (hasta.getFullYear() - desde.getFullYear()) * 12 + (hasta.getMonth() - desde.getMonth());
+    if (hasta.getDate() < desde.getDate()) meses--;
+    const ref = new Date(desde.getFullYear(), desde.getMonth() + meses, desde.getDate());
+    const dias = Math.round((hasta.getTime() - ref.getTime()) / 86400000);
+
+    const anios = Math.floor(meses / 12);
+    const mesesRest = meses % 12;
+
+    const partes: string[] = [];
+    if (anios > 0) partes.push(`${anios} ${anios === 1 ? 'año' : 'años'}`);
+    if (mesesRest > 0) partes.push(`${mesesRest} ${mesesRest === 1 ? 'mes' : 'meses'}`);
+    if (anios === 0 && mesesRest < 3 && dias > 0) partes.push(`${dias} ${dias === 1 ? 'día' : 'días'}`);
+    const duracion = partes.length ? partes.join(' y ') : 'menos de 1 día';
+
+    if (vencida) {
+      return { estado: 'vencida', texto: `PH VENCIDA hace ${duracion}`, fechaVenc };
+    }
+
+    let estado: 'critica' | 'proxima' | 'vigente' = 'vigente';
+    if (meses < 3) estado = 'critica';
+    else if (meses < 12) estado = 'proxima';
+
+    return { estado, texto: `Faltan ${duracion} para la PH`, fechaVenc };
+  }
+
+  // ===================== CÓDIGO DE BARRAS =====================
+
+  // Dibuja el código de barras cuando el modal ya está visible
+  generarCodigoBarras() {
+    const canvas = document.getElementById('barcodeCanvas') as HTMLCanvasElement | null;
+    if (!canvas || !this.cilindroSeleccionado) return;
+
+    const serie = String(
+      this.cilindroSeleccionado.numeroSerie || this.cilindroSeleccionado.numero_serie || ''
+    ).trim();
+    if (!serie) return;
+
+    try {
+      JsBarcode(canvas, serie, {
+        format: 'CODE128',
+        width: 3,
+        height: 90,
+        displayValue: true,
+        fontSize: 18,
+        margin: 12,
+        background: '#ffffff',
+        lineColor: '#000000'
+      });
+    } catch (e) {
+      console.error('No se pudo generar el código de barras:', e);
+    }
+  }
+
+  private obtenerSerieArchivo(): string {
+    const serie = String(
+      this.cilindroSeleccionado?.numeroSerie || this.cilindroSeleccionado?.numero_serie || 'cilindro'
+    );
+    return serie.replace(/[^a-zA-Z0-9_-]/g, '_');
+  }
+
+  // Descarga PNG (ideal para app de ticketera)
+  descargarCodigoImagen() {
+    const canvas = document.getElementById('barcodeCanvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `barcode-${this.obtenerSerieArchivo()}.png`;
+    link.click();
+  }
+
+  // Descarga PDF con ancho de ticket (80 mm)
+  descargarCodigoPDF() {
+    const canvas = document.getElementById('barcodeCanvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    const img = canvas.toDataURL('image/png');
+    const anchoPdf = 80;   // cambia a 58 si tu ticketera es de 58 mm
+    const margen = 5;
+    const anchoImg = anchoPdf - margen * 2;
+    const altoImg = (anchoImg * canvas.height) / canvas.width;
+    const altoPdf = altoImg + margen * 2;
+
+    const pdf = new jsPDF({
+      unit: 'mm',
+      orientation: altoPdf > anchoPdf ? 'portrait' : 'landscape',
+      format: [anchoPdf, altoPdf]
+    });
+
+    pdf.addImage(img, 'PNG', margen, margen, anchoImg, altoImg);
+    pdf.save(`barcode-${this.obtenerSerieArchivo()}.pdf`);
+  }
+
+  // ===================== ACCIONES =====================
+
+  // REDIRECCIÓN SEGÚN TUS RUTAS DECLARADAS: /registrocilindros/:id
   editarCilindro(item: any, event?: Event) {
     if (event) {
       event.stopPropagation();
     }
-    
+
     if (item?.id) {
       this.router.navigate(['/registrocilindros', item.id]);
     }

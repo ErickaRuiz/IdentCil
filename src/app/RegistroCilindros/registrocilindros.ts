@@ -17,7 +17,8 @@ import {
   IonIcon,
   IonSearchbar,
   IonModal,
-  IonHeader
+  IonHeader,
+  IonSpinner
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -39,7 +40,10 @@ import {
   colorPaletteOutline,
   shieldCheckmarkOutline,
   earthOutline,
-  optionsOutline
+  optionsOutline,
+  alertCircleOutline,
+  alertCircle,
+  createOutline
 } from 'ionicons/icons';
 
 @Component({
@@ -63,7 +67,8 @@ import {
     IonSelect,
     IonSelectOption,
     IonSearchbar,
-    IonModal
+    IonModal,
+    IonSpinner
   ]
 })
 export class RegistroCilindrosPage {
@@ -94,6 +99,16 @@ export class RegistroCilindrosPage {
 
   filtroCliente: string = '';
   clienteSeleccionadoNombre: string = '';
+  modalClientesAbierto: boolean = false;
+
+  // --- Verificación de número de serie duplicado ---
+  // Se consulta apenas el operario escribe la serie: si ya existe en la
+  // tabla `cilindros`, se muestra su info completa y se bloquea el guardado
+  // (salvo que sea el MISMO registro que se está editando).
+  verificandoSerie: boolean = false;
+  serieDuplicada: boolean = false;
+  cilindroExistente: any = null;
+  private debounceSerieTimeout: any = null;
 
   // Lista original de clientes
   listaClientes: any[] = [];
@@ -126,7 +141,10 @@ export class RegistroCilindrosPage {
       earthOutline,
       saveOutline,
       searchOutline,
-      chevronForwardOutline
+      chevronForwardOutline,
+      alertCircleOutline,
+      alertCircle,
+      createOutline
     });
   }
 
@@ -152,6 +170,15 @@ export class RegistroCilindrosPage {
       }
 
       await Promise.all(promesas);
+
+      // Si el nombre del propietario no vino en la carga, se toma de la lista de clientes
+      if (this.cilindro.clienteId && !this.clienteSeleccionadoNombre) {
+        const c = this.listaClientes.find(x => String(x.id) === String(this.cilindro.clienteId));
+        if (c) {
+          this.clienteSeleccionadoNombre = c.nombre_razon_social.toUpperCase();
+        }
+        this.cdRef.detectChanges();
+      }
     } else {
       this.limpiarFormulario();
       if (this.listaClientes.length === 0) {
@@ -191,28 +218,139 @@ export class RegistroCilindrosPage {
     }
 
     if (data) {
-      this.cilindro.id = data.id;
-      this.cilindro.numeroSerie = data.numero_serie || data.numeroSerie || '';
-      this.cilindro.clienteId = data.cliente_id || data.clienteId || null;
-      this.cilindro.tipoGas = data.tipo_gas || data.tipoGas || '';
-      this.cilindro.marca = data.marca || '';
-      this.cilindro.anioFabricacion = data.anio_fabricacion || data.anioFabricacion || null;
-      // En registrocilindros.ts -> cargarCilindroParaEdicion()
-      this.cilindro.unidadMedida = data.unidad_medida || data.unidadMedida || data.m3 || ''; this.cilindro.peso = data.peso || null;
-      this.cilindro.anchoDiametro = data.ancho_diametro || data.anchoDiametro || null;
-      this.cilindro.largoAltura = data.largo_altura || data.largoAltura || null;
-      this.cilindro.litros = data.litros || null;
-      this.cilindro.contenido = data.contenido || null;
-      this.cilindro.color = data.color || '';
-      this.cilindro.ph = data.ph || '';
-      this.cilindro.procedencia = data.procedencia || '';
-
-      if (data.clientes) {
-        this.clienteSeleccionadoNombre = (data.clientes as any).nombre_razon_social.toUpperCase();
-      }
-
+      this.aplicarDatosCilindro(data);
       this.cdRef.detectChanges();
     }
+  }
+
+  /**
+   * Vuelca los datos de un registro de `cilindros` (ya traído de Supabase,
+   * con o sin el join a `clientes`) en el formulario. La usan tanto la
+   * carga normal de edición como "Usar este registro" cuando se detecta
+   * una serie duplicada.
+   */
+  private aplicarDatosCilindro(data: any) {
+    this.cilindro.id = data.id;
+    this.cilindro.numeroSerie = data.numero_serie || data.numeroSerie || '';
+    this.cilindro.clienteId = data.cliente_id || data.clienteId || null;
+    this.cilindro.tipoGas = data.tipo_gas || data.tipoGas || '';
+    this.cilindro.marca = data.marca || '';
+    this.cilindro.anioFabricacion = data.anio_fabricacion || data.anioFabricacion || null;
+    this.cilindro.unidadMedida = data.unidad_medida || data.unidadMedida || data.m3 || '';
+    this.cilindro.peso = data.peso || null;
+    this.cilindro.anchoDiametro = data.ancho_diametro || data.anchoDiametro || null;
+    this.cilindro.largoAltura = data.largo_altura || data.largoAltura || null;
+    this.cilindro.litros = data.litros || null;
+    this.cilindro.contenido = data.contenido || null;
+    this.cilindro.color = data.color || '';
+    this.cilindro.ph = data.ph || '';
+    this.cilindro.procedencia = data.procedencia || '';
+
+    if (data.clientes) {
+      this.clienteSeleccionadoNombre = (data.clientes as any).nombre_razon_social.toUpperCase();
+    }
+  }
+
+  /**
+   * Se dispara con cada tecla del campo "Número de Serie". Espera un
+   * momento sin que el operario siga escribiendo (debounce) antes de
+   * consultar Supabase, para no disparar una consulta por cada letra.
+   */
+  onSerieInput(event: any) {
+    if (this.debounceSerieTimeout) {
+      clearTimeout(this.debounceSerieTimeout);
+    }
+
+    this.debounceSerieTimeout = setTimeout(() => {
+      this.verificarSerieDuplicada();
+    }, 400);
+  }
+
+  /**
+   * Escapa los comodines de ILIKE (% _ \) para que la serie se compare
+   * literalmente, ignorando solo mayúsculas/minúsculas.
+   */
+  private escaparIlike(valor: string): string {
+    return valor.replace(/[\\%_]/g, '\\$&');
+  }
+
+  /**
+   * Busca si el número de serie ya existe en `cilindros`. Si existe y
+   * pertenece a OTRO registro (no al que se está editando ahora mismo),
+   * se muestra su información completa y se bloquea "Registrar Cilindro".
+   */
+  async verificarSerieDuplicada() {
+    const serie = (this.cilindro.numeroSerie || '').trim();
+
+    if (!serie) {
+      this.serieDuplicada = false;
+      this.cilindroExistente = null;
+      this.verificandoSerie = false;
+      this.cdRef.detectChanges();
+      return;
+    }
+
+    this.verificandoSerie = true;
+    this.cdRef.detectChanges();
+
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('cilindros')
+        .select(`
+          *,
+          clientes (
+            nombre_razon_social,
+            tipo_documento,
+            num_documento
+          )
+        `)
+        .ilike('numero_serie', this.escaparIlike(serie))
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error al verificar si la serie ya existe:', error);
+        this.serieDuplicada = false;
+        this.cilindroExistente = null;
+        return;
+      }
+
+      const esOtroRegistro = !!data && (!this.esEdicion || data.id !== this.cilindroId);
+
+      if (esOtroRegistro) {
+        this.serieDuplicada = true;
+        this.cilindroExistente = data;
+      } else {
+        this.serieDuplicada = false;
+        this.cilindroExistente = null;
+      }
+    } catch (err) {
+      console.error('Error inesperado al verificar la serie:', err);
+      this.serieDuplicada = false;
+      this.cilindroExistente = null;
+    } finally {
+      this.verificandoSerie = false;
+      this.cdRef.detectChanges();
+    }
+  }
+
+  /**
+   * En vez de crear un duplicado, carga el registro ya existente en el
+   * mismo formulario para editarlo (sin navegar, así no hay que volver a
+   * consultarlo).
+   */
+  usarRegistroExistente() {
+    if (!this.cilindroExistente) return;
+
+    this.cilindroId = this.cilindroExistente.id;
+    this.esEdicion = true;
+    this.textoBotonGuardar = 'ACTUALIZAR CILINDRO';
+
+    this.aplicarDatosCilindro(this.cilindroExistente);
+
+    this.serieDuplicada = false;
+    this.cilindroExistente = null;
+    this.cdRef.detectChanges();
   }
 
   filtrarClientes(event: any) {
@@ -231,10 +369,22 @@ export class RegistroCilindrosPage {
     });
   }
 
-  seleccionarCliente(cliente: any, modal: any) {
+  abrirModalClientes() {
+    // Siempre se abre con la lista completa, tanto al registrar como al editar
+    this.filtroCliente = '';
+    this.clientesFiltrados = [...this.listaClientes];
+    this.modalClientesAbierto = true;
+  }
+
+  cerrarModalClientes() {
+    this.modalClientesAbierto = false;
+  }
+
+  seleccionarCliente(cliente: any) {
     this.cilindro.clienteId = cliente.id;
     this.clienteSeleccionadoNombre = cliente.nombre_razon_social.toUpperCase();
-    modal.dismiss();
+    this.cerrarModalClientes();
+    this.cdRef.detectChanges();
   }
 
   async guardarCilindro() {
@@ -251,6 +401,30 @@ export class RegistroCilindrosPage {
       return;
     }
 
+    // Bloqueo inmediato con lo que ya se sabe en pantalla.
+    if (this.serieDuplicada) {
+      alert('Este número de serie ya está registrado. Revisa la información mostrada o usa "Editar este registro".');
+      return;
+    }
+
+    // Re-chequeo por si el duplicado se creó justo ahora (otro dispositivo,
+    // o el operario guardó antes de que terminara de escribir la serie).
+    const serieAGuardar = this.cilindro.numeroSerie.trim();
+    const { data: existente, error: errorVerificacion } = await this.supabaseService.supabase
+      .from('cilindros')
+      .select('id')
+      .ilike('numero_serie', this.escaparIlike(serieAGuardar))
+      .limit(1)
+      .maybeSingle();
+
+    if (errorVerificacion) {
+      console.error('Error al re-verificar la serie antes de guardar:', errorVerificacion);
+    } else if (existente && (!this.esEdicion || existente.id !== this.cilindroId)) {
+      await this.verificarSerieDuplicada();
+      alert('Este número de serie ya está registrado. Revisa la información mostrada.');
+      return;
+    }
+
     let phFinal = this.cilindro.ph ? this.cilindro.ph.trim().toUpperCase() : '';
     if (!phFinal) {
       const gases5Anios = ['DIÓXIDO DE CARBONO', 'MEZCLA'];
@@ -259,7 +433,7 @@ export class RegistroCilindrosPage {
     }
 
     const payload = {
-      numero_serie: this.cilindro.numeroSerie.trim().toUpperCase(),
+      numero_serie: this.cilindro.numeroSerie.trim(),
       cliente_id: this.cilindro.clienteId,
       tipo_gas: this.cilindro.tipoGas,
       marca: this.cilindro.marca ? this.cilindro.marca.trim().toUpperCase() : null,
@@ -268,7 +442,9 @@ export class RegistroCilindrosPage {
       ancho_diametro: this.cilindro.anchoDiametro ? Number(this.cilindro.anchoDiametro) : null,
       largo_altura: this.cilindro.largoAltura ? Number(this.cilindro.largoAltura) : null,
       litros: this.cilindro.tipoGas !== 'ACETILENO' && this.cilindro.litros ? Number(this.cilindro.litros) : null,
-      contenido: this.cilindro.tipoGas === 'ACETILENO' && this.cilindro.contenido ? Number(this.cilindro.contenido) : null,
+      contenido: (this.cilindro.tipoGas === 'ACETILENO' || this.cilindro.unidadMedida) && this.cilindro.contenido
+        ? Number(this.cilindro.contenido)
+        : null,
       color: this.cilindro.color ? this.cilindro.color.trim().toUpperCase() : null,
       ph: phFinal,
       procedencia: this.cilindro.procedencia ? this.cilindro.procedencia.trim().toUpperCase() : null
@@ -324,6 +500,10 @@ export class RegistroCilindrosPage {
     this.clienteSeleccionadoNombre = '';
     this.filtroCliente = '';
     this.clientesFiltrados = [...this.listaClientes];
+
+    this.serieDuplicada = false;
+    this.cilindroExistente = null;
+    this.verificandoSerie = false;
   }
 
   formatearPH(event: any) {

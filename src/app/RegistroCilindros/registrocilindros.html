@@ -38,10 +38,88 @@
       <label class="input-label">
         <ion-icon name="barcode-outline"></ion-icon> NÚMERO DE SERIE
       </label>
-      <ion-item lines="none" class="custom-input-item">
-        <ion-input [(ngModel)]="cilindro.numeroSerie" name="numeroSerie" placeholder="EJ. CIL-2026-99"
-          type="text"></ion-input>
+      <ion-item lines="none" class="custom-input-item" [class.item-serie-duplicada]="serieDuplicada">
+        <ion-input class="input-serie" [(ngModel)]="cilindro.numeroSerie" name="numeroSerie" placeholder="EJ. CIL-2026-99"
+          type="text" (ionInput)="onSerieInput($event)"></ion-input>
+        <ion-spinner *ngIf="verificandoSerie" name="crescent" slot="end" class="spinner-serie"></ion-spinner>
+        <ion-icon *ngIf="!verificandoSerie && serieDuplicada" name="alert-circle" slot="end" color="danger"></ion-icon>
       </ion-item>
+    </div>
+
+    <!-- AVISO: el número de serie ya está registrado -->
+    <div class="alerta-duplicado" *ngIf="serieDuplicada && cilindroExistente">
+      <div class="alerta-duplicado-header">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        Este cilindro ya está registrado
+      </div>
+
+      <div class="alerta-duplicado-grid">
+        <div class="dato">
+          <span class="label">Propietario</span>
+          <span class="valor">{{ cilindroExistente.clientes?.nombre_razon_social || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Documento</span>
+          <span class="valor">{{ cilindroExistente.clientes?.tipo_documento || 'DOC' }}: {{ cilindroExistente.clientes?.num_documento || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Tipo de Gas</span>
+          <span class="valor">{{ cilindroExistente.tipo_gas || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Marca</span>
+          <span class="valor">{{ cilindroExistente.marca || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Año Fab.</span>
+          <span class="valor">{{ cilindroExistente.anio_fabricacion || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Unidad</span>
+          <span class="valor">{{ cilindroExistente.unidad_medida || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Peso</span>
+          <span class="valor">{{ cilindroExistente.peso ? (cilindroExistente.peso + ' kg') : 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Diámetro</span>
+          <span class="valor">{{ cilindroExistente.ancho_diametro ? (cilindroExistente.ancho_diametro + ' cm') : 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Altura</span>
+          <span class="valor">{{ cilindroExistente.largo_altura ? (cilindroExistente.largo_altura + ' cm') : 'N/A' }}</span>
+        </div>
+        <div class="dato" *ngIf="cilindroExistente.tipo_gas === 'ACETILENO'">
+          <span class="label">Capacidad</span>
+          <span class="valor">{{ cilindroExistente.contenido ? (cilindroExistente.contenido + ' kg') : 'N/A' }}</span>
+        </div>
+        <div class="dato" *ngIf="cilindroExistente.tipo_gas !== 'ACETILENO'">
+          <span class="label">Litros</span>
+          <span class="valor">{{ cilindroExistente.litros ? (cilindroExistente.litros + ' L') : 'N/A' }}</span>
+        </div>
+        <div class="dato" *ngIf="cilindroExistente.tipo_gas !== 'ACETILENO' && cilindroExistente.contenido">
+          <span class="label">Capacidad</span>
+          <span class="valor">{{ cilindroExistente.contenido }} {{ cilindroExistente.unidad_medida }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Color</span>
+          <span class="valor">{{ cilindroExistente.color || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">PH</span>
+          <span class="valor highlight">{{ cilindroExistente.ph || 'N/A' }}</span>
+        </div>
+        <div class="dato">
+          <span class="label">Procedencia</span>
+          <span class="valor">{{ cilindroExistente.procedencia || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <ion-button expand="block" fill="outline" color="warning" class="btn-usar-existente" (click)="usarRegistroExistente()">
+        <ion-icon name="create-outline" slot="start"></ion-icon>
+        Editar este registro en vez de crear uno nuevo
+      </ion-button>
     </div>
 
     <!-- PROPIETARIO / EMPRESA -->
@@ -49,7 +127,7 @@
       <label class="input-label">
         <ion-icon name="business-outline"></ion-icon> PROPIETARIO / EMPRESA
       </label>
-      <ion-item lines="none" class="custom-input-item" id="open-client-modal" button="true">
+      <ion-item lines="none" class="custom-input-item" button="true" (click)="abrirModalClientes()">
         <ion-input [value]="clienteSeleccionadoNombre" placeholder="SELECCIONE UN CLIENTE" readonly="true"></ion-input>
         <ion-icon name="chevron-down-outline" slot="end" style="color: #94a3b8;"></ion-icon>
       </ion-item>
@@ -118,6 +196,21 @@
       </div>
     </div>
 
+    <!-- CONTENIDO (otros gases): aparece al elegir M3 o KG -->
+    <div class="input-row" *ngIf="cilindro.tipoGas !== 'ACETILENO' && cilindro.unidadMedida">
+      <div class="input-group flex-1">
+        <label class="input-label">
+          <ion-icon name="cube-outline"></ion-icon> CAPACIDAD
+        </label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-input [(ngModel)]="cilindro.contenido" name="contenidoUnidad" placeholder="0"
+            type="number"></ion-input>
+          <span slot="end" class="input-unit">{{ cilindro.unidadMedida }}</span>
+        </ion-item>
+      </div>
+      <div class="flex-1"></div>
+    </div>
+
     <!-- DIÁMETRO Y ALTURA -->
     <div class="input-row">
       <div class="input-group flex-1">
@@ -142,7 +235,7 @@
       <!-- Muestra CONTENIDO si el gas es ACETILENO -->
       <div class="input-group flex-1" *ngIf="cilindro.tipoGas === 'ACETILENO'">
         <label class="input-label">
-          <ion-icon name="cube-outline"></ion-icon> CONTENIDO
+          <ion-icon name="cube-outline"></ion-icon> CAPACIDAD
         </label>
         <ion-item lines="none" class="custom-input-item">
           <ion-input [(ngModel)]="cilindro.contenido" name="contenido" placeholder="7" type="number"></ion-input>
@@ -198,6 +291,7 @@
 
     <!-- BOTÓN GUARDAR -->
     <ion-button expand="full" (click)="guardarCilindro()" class="btn-guardar"
+      [disabled]="serieDuplicada || verificandoSerie"
       style="--background: #00A859; --background-activated: #008f4c; --color: #ffffff;">
       <ion-icon name="save-outline" slot="start"></ion-icon>
       {{ textoBotonGuardar }}
@@ -207,13 +301,13 @@
 </ion-content>
 
 <!-- MODAL BÚSQUEDA DE CLIENTES -->
-<ion-modal trigger="open-client-modal" #clientModal>
+<ion-modal [isOpen]="modalClientesAbierto" (didDismiss)="cerrarModalClientes()">
   <ng-template>
     <ion-header class="ion-no-border">
       <ion-toolbar class="custom-toolbar">
         <ion-title class="brand-title">SELECCIONAR CLIENTE</ion-title>
         <ion-buttons slot="end">
-          <ion-button (click)="clientModal.dismiss()" color="danger">Cerrar</ion-button>
+          <ion-button (click)="cerrarModalClientes()" color="danger">Cerrar</ion-button>
         </ion-buttons>
       </ion-toolbar>
       <ion-toolbar class="custom-toolbar">
@@ -234,7 +328,7 @@
 
       <div *ngIf="clientesFiltrados.length > 0" class="list-container" style="padding: 8px;">
         <div class="client-card-mini" *ngFor="let cliente of clientesFiltrados"
-          (click)="seleccionarCliente(cliente, clientModal)" style="cursor: pointer; margin-bottom: 6px;">
+          (click)="seleccionarCliente(cliente)" style="cursor: pointer; margin-bottom: 6px;">
           <div class="client-info">
             <div class="row-badge">
               <span class="badge" [class.ruc]="cliente.tipo_documento === 'RUC'">
