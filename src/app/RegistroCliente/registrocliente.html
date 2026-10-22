@@ -67,6 +67,17 @@
         </ion-item>
       </div>
 
+      <!-- Persona Responsable (solo cuando es RUC) -->
+      <div class="input-card" *ngIf="cliente.tipo_documento === 'RUC'">
+        <ion-label class="input-label">Persona Responsable (Apellidos y Nombres)</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="person-circle-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" placeholder="Ej. Pérez Gómez Juan Carlos"
+            [(ngModel)]="cliente.persona_responsable" name="persona_responsable">
+          </ion-input>
+        </ion-item>
+      </div>
+
       <!-- Dirección -->
       <div class="input-card">
         <ion-label class="input-label">Dirección Fiscal / Domicilio</ion-label>

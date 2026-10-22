@@ -1,0 +1,345 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
+    <ion-buttons slot="start">
+      <ion-button (click)="regresar()" class="btn-back">
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title class="brand-title">HISTORIAL DE CILINDROS</ion-title>
+  </ion-toolbar>
+
+  <ion-toolbar class="custom-toolbar">
+    <ion-searchbar placeholder="Buscar por Serie, Gas o Cliente..." [debounce]="150"
+      (ionInput)="filtrarCilindros($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-content">
+
+  <!-- CARGANDO -->
+  <div class="loading-state" *ngIf="cargando && cilindros.length === 0">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando historial…</p>
+  </div>
+
+  <!-- SIN RESULTADOS -->
+  <div *ngIf="!cargando && cilindrosFiltrados.length === 0" class="empty-state">
+    <ion-icon name="search-outline"></ion-icon>
+    <h3>No se encontraron cilindros</h3>
+    <p *ngIf="filtro">No hay registros que coincidan con "{{ filtro }}"</p>
+  </div>
+
+  <!-- LISTA DE TODOS LOS CILINDROS -->
+  <div *ngIf="cilindrosFiltrados.length > 0" class="list-container">
+    <span class="contador">{{ cilindrosFiltrados.length }} cilindro(s)</span>
+
+    <div class="cylinder-card" *ngFor="let item of cilindrosFiltrados" (click)="verHistorial(item)">
+      <div class="card-info">
+        <div class="row-badges">
+          <span class="badge serie">{{ item.serie }}</span>
+          <span class="badge gas" [ngClass]="obtenerClaseGas(item.tipoGas)">
+            <ion-icon name="flask-outline"></ion-icon> {{ item.tipoGas }}
+          </span>
+        </div>
+        <div class="row-client">
+          <span class="client-name">{{ item.clienteNombre | uppercase }}</span>
+        </div>
+        <div class="row-doc">
+          <span class="estado" [ngClass]="{
+              'dentro': item.situacion === 'DENTRO',
+              'fuera': item.situacion === 'FUERA',
+              'sin': item.situacion === 'SIN_MOVIMIENTOS' }">
+            {{ item.situacion === 'DENTRO' ? 'Dentro de planta'
+            : item.situacion === 'FUERA' ? 'Fuera de planta' : 'Sin movimientos' }}
+          </span>
+        </div>
+      </div>
+      <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+    </div>
+  </div>
+
+</ion-content>
+
+<!-- MODAL: HISTORIAL DEL CILINDRO -->
+<ion-modal [isOpen]="isModalOpen" (didDismiss)="cerrarDetalle()">
+  <ng-template>
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="brand-title">HISTORIAL</ion-title>
+        <ion-buttons slot="end">
+          <ion-button color="danger" (click)="cerrarDetalle()">Cerrar</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="main-content" *ngIf="seleccionado as s">
+      <div class="detail-card">
+
+        <div class="detail-header">
+          <h2>{{ s.serie }}</h2>
+          <span class="badge gas" [ngClass]="obtenerClaseGas(s.tipoGas)">{{ s.tipoGas }}</span>
+        </div>
+
+        <div class="owner-row">
+          <ion-icon name="business-outline"></ion-icon>
+          <div>
+            <strong>{{ s.clienteNombre | uppercase }}</strong>
+            <span>{{ s.clienteDoc }}</span>
+          </div>
+        </div>
+
+        <ion-button expand="block" fill="outline" class="btn-pdf" (click)="descargarPdf(s)">
+          <ion-icon name="download-outline" slot="start"></ion-icon>
+          DESCARGAR HISTORIAL EN PDF
+        </ion-button>
+
+        <!-- CLIENTES QUE LO TUVIERON -->
+        <h3 class="section-title"><ion-icon name="people-outline"></ion-icon> Clientes que lo tuvieron</h3>
+        <div class="tenencias">
+          <div class="timeline-empty" *ngIf="s.tenencias.length === 0">
+            Todavía no ha salido a ningún cliente.
+          </div>
+          <div class="tenencia" *ngFor="let t of s.tenencias">
+            <strong>{{ t.cliente | uppercase }}</strong>
+            <span>
+              Desde {{ t.desde | date:'dd/MM/yyyy' }}<ng-container *ngIf="t.conHoraDesde"> · {{ t.desde | date:'hh:mm a'
+                }}</ng-container>
+            </span>
+            <span *ngIf="t.hasta">
+              Hasta {{ t.hasta | date:'dd/MM/yyyy' }}<ng-container *ngIf="t.conHoraHasta"> · {{ t.hasta | date:'hh:mm a'
+                }}</ng-container>
+            </span>
+            <span class="actual" *ngIf="!t.hasta">Lo tiene actualmente</span>
+          </div>
+        </div>
+
+        <!-- ALMACENES DONDE ESTUVO -->
+        <h3 class="section-title"><ion-icon name="location-outline"></ion-icon> Almacenes donde estuvo</h3>
+        <div class="tenencias">
+          <div class="timeline-empty" *ngIf="s.estancias.length === 0">
+            Todavía no tiene ingresos a un almacén.
+          </div>
+          <div class="tenencia" *ngFor="let e of s.estancias">
+            <strong>{{ e.almacen | uppercase }}</strong>
+            <span>
+              Desde {{ e.desde | date:'dd/MM/yyyy' }}<ng-container *ngIf="e.conHoraDesde"> · {{ e.desde | date:'hh:mm a'
+                }}</ng-container>
+            </span>
+            <span *ngIf="e.hasta">
+              Hasta {{ e.hasta | date:'dd/MM/yyyy' }}<ng-container *ngIf="e.conHoraHasta"> · {{ e.hasta | date:'hh:mm a'
+                }}</ng-container>
+            </span>
+            <span class="aqui" *ngIf="!e.hasta">Está aquí actualmente</span>
+          </div>
+        </div>
+
+        <!-- LÍNEA DE TIEMPO -->
+        <h3 class="section-title"><ion-icon name="time-outline"></ion-icon> Movimientos</h3>
+        <div class="timeline">
+          <div class="timeline-empty" *ngIf="s.eventos.length === 0">
+            Este cilindro todavía no tiene movimientos.
+          </div>
+
+          <div class="timeline-item" *ngFor="let ev of s.eventos" [ngClass]="'tipo-' + ev.tipo.toLowerCase()">
+            <div class="timeline-icon">
+              <ion-icon [name]="iconoEvento(ev.tipo)"></ion-icon>
+            </div>
+            <div class="timeline-body">
+              <span class="ev-titulo">{{ ev.titulo }}</span>
+              <span class="ev-detalle">
+                <ion-icon name="location-outline"></ion-icon>
+                {{ ev.etiqueta }}: <strong>{{ ev.detalle | uppercase }}</strong>
+              </span>
+              <span class="ev-fecha">
+                <ion-icon name="time-outline"></ion-icon>
+                {{ fechaLarga(ev.fecha) }}
+                <ng-container *ngIf="ev.conHora"> · {{ ev.fecha | date:'hh:mm a' }}</ng-container>
+              </span><ion-header class="ion-no-border">
+                <ion-toolbar class="custom-toolbar">
+                  <ion-buttons slot="start">
+                    <ion-button (click)="regresar()" class="btn-back">
+                      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+                    </ion-button>
+                  </ion-buttons>
+
+                  <ion-title class="brand-title">HISTORIAL DE CILINDROS</ion-title>
+                </ion-toolbar>
+
+                <ion-toolbar class="custom-toolbar">
+                  <ion-searchbar placeholder="Buscar por Serie, Gas o Cliente..." [debounce]="150"
+                    (ionInput)="filtrarCilindros($event)">
+                  </ion-searchbar>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="main-content">
+
+                <!-- CARGANDO -->
+                <div class="loading-state" *ngIf="cargando && cilindros.length === 0">
+                  <ion-spinner name="crescent"></ion-spinner>
+                  <p>Cargando historial…</p>
+                </div>
+
+                <!-- AVISOS TÉCNICOS (qué tablas se leyeron) -->
+                <div class="diagnostico" *ngIf="diagnostico.length > 0">
+                  <strong>Datos leídos de Supabase</strong>
+                  <span *ngFor="let d of diagnostico">{{ d }}</span>
+                </div>
+
+                <!-- SIN RESULTADOS -->
+                <div *ngIf="!cargando && cilindrosFiltrados.length === 0" class="empty-state">
+                  <ion-icon name="search-outline"></ion-icon>
+                  <h3>No se encontraron cilindros</h3>
+                  <p *ngIf="filtro">No hay registros que coincidan con "{{ filtro }}"</p>
+                </div>
+
+                <!-- LISTA DE TODOS LOS CILINDROS -->
+                <div *ngIf="cilindrosFiltrados.length > 0" class="list-container">
+                  <span class="contador">{{ cilindrosFiltrados.length }} cilindro(s)</span>
+
+                  <div class="cylinder-card" *ngFor="let item of cilindrosFiltrados" (click)="verHistorial(item)">
+                    <div class="card-info">
+                      <div class="row-badges">
+                        <span class="badge serie">{{ item.serie }}</span>
+                        <span class="badge gas" [ngClass]="obtenerClaseGas(item.tipoGas)">
+                          <ion-icon name="flask-outline"></ion-icon> {{ item.tipoGas }}
+                        </span>
+                      </div>
+                      <div class="row-client">
+                        <span class="client-name">{{ item.clienteNombre | uppercase }}</span>
+                      </div>
+                      <div class="row-doc">
+                        <span class="estado" [ngClass]="{
+              'dentro': item.situacion === 'DENTRO',
+              'fuera': item.situacion === 'FUERA',
+              'sin': item.situacion === 'SIN_MOVIMIENTOS' }">
+                          {{ item.situacion === 'DENTRO' ? 'Dentro de planta'
+                          : item.situacion === 'FUERA' ? 'Fuera de planta' : 'Sin movimientos' }}
+                        </span>
+                      </div>
+                    </div>
+                    <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+                  </div>
+                </div>
+
+              </ion-content>
+
+              <!-- MODAL: HISTORIAL DEL CILINDRO -->
+              <ion-modal [isOpen]="isModalOpen" (didDismiss)="cerrarDetalle()">
+                <ng-template>
+                  <ion-header class="ion-no-border">
+                    <ion-toolbar class="custom-toolbar">
+                      <ion-title class="brand-title">HISTORIAL</ion-title>
+                      <ion-buttons slot="end">
+                        <ion-button color="danger" (click)="cerrarDetalle()">Cerrar</ion-button>
+                      </ion-buttons>
+                    </ion-toolbar>
+                  </ion-header>
+
+                  <ion-content class="main-content" *ngIf="seleccionado as s">
+                    <div class="detail-card">
+
+                      <div class="detail-header">
+                        <h2>{{ s.serie }}</h2>
+                        <span class="badge gas" [ngClass]="obtenerClaseGas(s.tipoGas)">{{ s.tipoGas }}</span>
+                      </div>
+
+                      <div class="owner-row">
+                        <ion-icon name="business-outline"></ion-icon>
+                        <div>
+                          <strong>{{ s.clienteNombre | uppercase }}</strong>
+                          <span>{{ s.clienteDoc }}</span>
+                        </div>
+                      </div>
+
+                      <ion-button expand="block" fill="outline" class="btn-pdf" (click)="descargarPdf(s)">
+                        <ion-icon name="download-outline" slot="start"></ion-icon>
+                        DESCARGAR HISTORIAL EN PDF
+                      </ion-button>
+
+                      <!-- CLIENTES QUE LO TUVIERON -->
+                      <h3 class="section-title"><ion-icon name="people-outline"></ion-icon> Clientes que lo tuvieron
+                      </h3>
+                      <div class="tenencias">
+                        <div class="timeline-empty" *ngIf="s.tenencias.length === 0">
+                          Todavía no ha salido a ningún cliente.
+                        </div>
+                        <div class="tenencia" *ngFor="let t of s.tenencias">
+                          <strong>{{ t.cliente | uppercase }}</strong>
+                          <span>
+                            Desde {{ t.desde | date:'dd/MM/yyyy' }}<ng-container *ngIf="t.conHoraDesde"> · {{ t.desde |
+                              date:'hh:mm a' }}</ng-container>
+                          </span>
+                          <span *ngIf="t.hasta">
+                            Hasta {{ t.hasta | date:'dd/MM/yyyy' }}<ng-container *ngIf="t.conHoraHasta"> · {{ t.hasta |
+                              date:'hh:mm a' }}</ng-container>
+                          </span>
+                          <span class="actual" *ngIf="!t.hasta">Lo tiene actualmente</span>
+                        </div>
+                      </div>
+
+                      <!-- ALMACENES DONDE ESTUVO -->
+                      <h3 class="section-title"><ion-icon name="location-outline"></ion-icon> Almacenes donde estuvo
+                      </h3>
+                      <div class="tenencias">
+                        <div class="timeline-empty" *ngIf="s.estancias.length === 0">
+                          Todavía no tiene ingresos a un almacén.
+                        </div>
+                        <div class="tenencia" *ngFor="let e of s.estancias">
+                          <strong>{{ e.almacen | uppercase }}</strong>
+                          <span>
+                            Desde {{ e.desde | date:'dd/MM/yyyy' }}<ng-container *ngIf="e.conHoraDesde"> · {{ e.desde |
+                              date:'hh:mm a' }}</ng-container>
+                          </span>
+                          <span *ngIf="e.hasta">
+                            Hasta {{ e.hasta | date:'dd/MM/yyyy' }}<ng-container *ngIf="e.conHoraHasta"> · {{ e.hasta |
+                              date:'hh:mm a' }}</ng-container>
+                          </span>
+                          <span class="aqui" *ngIf="!e.hasta">Está aquí actualmente</span>
+                        </div>
+                      </div>
+
+                      <!-- LÍNEA DE TIEMPO -->
+                      <h3 class="section-title"><ion-icon name="time-outline"></ion-icon> Movimientos</h3>
+                      <div class="timeline">
+                        <div class="timeline-empty" *ngIf="s.eventos.length === 0">
+                          Este cilindro todavía no tiene movimientos.
+                        </div>
+
+                        <div class="timeline-item" *ngFor="let ev of s.eventos"
+                          [ngClass]="'tipo-' + ev.tipo.toLowerCase()">
+                          <div class="timeline-icon">
+                            <ion-icon [name]="iconoEvento(ev.tipo)"></ion-icon>
+                          </div>
+                          <div class="timeline-body">
+                            <span class="ev-titulo">{{ ev.titulo }}</span>
+                            <span class="ev-detalle">
+                              <ion-icon name="location-outline"></ion-icon>
+                              {{ ev.etiqueta }}: <strong>{{ ev.detalle | uppercase }}</strong>
+                            </span>
+                            <span class="ev-detalle" *ngIf="ev.extra">
+                              <ion-icon name="people-outline"></ion-icon> {{ ev.extra }}
+                            </span>
+                            <span class="ev-fecha">
+                              <ion-icon name="time-outline"></ion-icon>
+                              {{ fechaLarga(ev.fecha) }}
+                              <ng-container *ngIf="ev.conHora"> · {{ ev.fecha | date:'hh:mm a' }}</ng-container>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </ion-content>
+                </ng-template>
+              </ion-modal>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

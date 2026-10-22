@@ -272,19 +272,190 @@
     color: #b91c1c;
   }
   &.gas-argon {
-    background-color: #fef3c7;
-    color: #92400e;
+    background-color: #f1e2d3;
+    color: #78350f;
   }
   &.gas-nitrogeno {
     background-color: #fef9c3;
-    color: #a16207;
+    color: #854d0e;
   }
   &.gas-co2 {
-    background-color: #e2e8f0;
-    color: #334155;
+    background-color: #e5e7eb;
+    color: #374151;
   }
   &.gas-mezcla {
-    background-color: #e2e8f0;
-    color: #78350f;
+    background: linear-gradient(135deg, #fed7aa 0%, #fef08a 100%);
+    color: #9a3412;
+  }
+}
+
+// --- Lista de series: color según el gas ---
+.serie-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.serie-row {
+  // Colores por defecto (gas no reconocido)
+  --gas-color: #64748b;
+  --gas-text: #475569;
+  --gas-bg: #f1f5f9;
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid var(--gas-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+
+  &:active {
+    transform: scale(0.985);
+    box-shadow: none;
+    background: var(--gas-bg);
+  }
+
+  .serie-icono {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--gas-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      font-size: 20px;
+      color: var(--gas-text);
+    }
+  }
+
+  .serie-numero {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .serie-gas {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--gas-bg);
+    color: var(--gas-text);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+
+  .serie-flecha {
+    flex-shrink: 0;
+    font-size: 16px;
+    color: #cbd5e1;
+  }
+
+  // OXÍGENO: verde
+  &.gas-oxigeno   { --gas-color: #16a34a; --gas-text: #15803d; --gas-bg: #dcfce7; }
+  // ACETILENO: rojo
+  &.gas-acetileno { --gas-color: #dc2626; --gas-text: #b91c1c; --gas-bg: #fee2e2; }
+  // ARGÓN: marrón
+  &.gas-argon     { --gas-color: #92400e; --gas-text: #78350f; --gas-bg: #f1e2d3; }
+  // NITRÓGENO: amarillo
+  &.gas-nitrogeno { --gas-color: #eab308; --gas-text: #854d0e; --gas-bg: #fef9c3; }
+  // CO2: gris
+  &.gas-co2       { --gas-color: #6b7280; --gas-text: #374151; --gas-bg: #e5e7eb; }
+  // MEZCLA / STARGOLD: naranja con amarillo
+  &.gas-mezcla    { --gas-color: #f97316; --gas-text: #9a3412; --gas-bg: linear-gradient(135deg, #fed7aa 0%, #fef08a 100%); }
+}
+
+// --- Detalle de un cilindro ---
+.detalle-cilindro {
+  padding: 16px;
+
+  .detalle-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 12px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #00A859;
+      word-break: break-all;
+    }
+  }
+
+  .detalle-propietario {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #334155;
+
+    ion-icon {
+      font-size: 18px;
+      color: #64748b;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    strong {
+      display: block;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+
+  .detalle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+
+    .dato {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+      }
+
+      .valor {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+
+        &.highlight {
+          color: #00A859;
+        }
+      }
+    }
   }
 }

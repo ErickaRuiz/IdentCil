@@ -12,7 +12,11 @@ import {
   IonModal, IonInput, IonSelect, IonSelectOption, ToastController, AlertController
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { pencilOutline, trashOutline, createOutline, businessOutline, personOutline } from 'ionicons/icons';
+import {
+  pencilOutline, trashOutline, createOutline, businessOutline, personOutline,
+  callOutline, logoWhatsapp, mailOutline, locationOutline, cardOutline,
+  calendarOutline, personCircleOutline, closeOutline
+} from 'ionicons/icons';
 import { SupabaseService } from '../services/supabase';
 
 @Component({
@@ -37,20 +41,19 @@ export class ListaClientesComponent implements OnInit {
   clientes: any[] = [];
   clientesFiltrados: any[] = [];
   cargando: boolean = true;
-  modalEdicionAbierto: boolean = false;
 
-  clienteSeleccionado: any = {
-    id: null,
-    tipo_documento: 'RUC',
-    num_documento: '',
-    nombre_razon_social: '',
-    direccion: '',
-    telefono: '',
-    email: ''
-  };
+  // Detalle del cliente
+  detalleAbierto: boolean = false;
+  clienteDetalle: any = null;
+  telefonosDetalle: { texto: string; wa: string; tel: string }[] = [];
+  correosDetalle: { texto: string; mailto: string }[] = [];
 
   constructor() {
-    addIcons({ pencilOutline, trashOutline, createOutline, businessOutline, personOutline });
+    addIcons({
+      pencilOutline, trashOutline, createOutline, businessOutline, personOutline,
+      callOutline, logoWhatsapp, mailOutline, locationOutline, cardOutline,
+      calendarOutline, personCircleOutline, closeOutline
+    });
   }
 
   ngOnInit() {
@@ -108,29 +111,64 @@ export class ListaClientesComponent implements OnInit {
     this.router.navigate(['/registrocliente', id]);
   }
 
-  cerrarModal() {
-    this.modalEdicionAbierto = false;
+  // ===================== DETALLE DEL CLIENTE =====================
+
+  verDetalle(cliente: any) {
+    this.clienteDetalle = cliente;
+    this.telefonosDetalle = this.procesarTelefonos(cliente?.telefono);
+    this.correosDetalle = this.procesarCorreos(cliente?.email);
+    this.detalleAbierto = true;
   }
 
-  async actualizarCliente() {
-    this.cargando = true;
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('clientes')
-        .update(this.clienteSeleccionado)
-        .eq('id', this.clienteSeleccionado.id);
+  cerrarDetalle() {
+    this.detalleAbierto = false;
+    this.clienteDetalle = null;
+  }
 
-      if (error) throw error;
-
-      this.mostrarToast('Cliente actualizado correctamente', 'success');
-      this.cerrarModal();
-      this.obtenerClientes();
-    } catch (err: any) {
-      this.mostrarToast('Error al actualizar cliente', 'danger');
-    } finally {
-      this.cargando = false;
-      this.cdr.detectChanges();
+  editarDesdeDetalle() {
+    const id = this.clienteDetalle?.id;
+    this.cerrarDetalle();
+    if (id) {
+      this.abrirEditar(id);
     }
+  }
+
+  // Convierte el campo teléfono en enlaces de WhatsApp y llamada.
+  // Acepta varios números separados por "/", "," o ";".
+  // Celulares peruanos de 9 dígitos (empiezan con 9) reciben el prefijo 51.
+  private procesarTelefonos(valor: any): { texto: string; wa: string; tel: string }[] {
+    if (!valor) return [];
+
+    return String(valor)
+      .split(/[\/,;]/)
+      .map(t => t.trim())
+      .filter(t => t.length > 0)
+      .map(texto => {
+        let digitos = texto.replace(/\D/g, '');
+        if (digitos.startsWith('00')) digitos = digitos.substring(2);
+
+        let wa = '';
+        if (digitos.length === 9 && digitos.startsWith('9')) {
+          wa = `https://wa.me/51${digitos}`;
+        } else if (digitos.length === 11 && digitos.startsWith('519')) {
+          wa = `https://wa.me/${digitos}`;
+        }
+
+        const tel = digitos ? `tel:${digitos}` : '';
+        return { texto, wa, tel };
+      })
+      .filter(t => t.tel);
+  }
+
+  // Convierte el campo email en enlaces mailto. Acepta varios correos separados por ";" "," o espacios.
+  private procesarCorreos(valor: any): { texto: string; mailto: string }[] {
+    if (!valor) return [];
+
+    return String(valor)
+      .split(/[;,\s]+/)
+      .map(c => c.trim())
+      .filter(c => c.includes('@'))
+      .map(texto => ({ texto, mailto: `mailto:${texto}` }));
   }
 
   async confirmarEliminar(id: number) {

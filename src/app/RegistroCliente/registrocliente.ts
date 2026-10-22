@@ -27,7 +27,8 @@ import {
   personOutline, 
   locationOutline, 
   callOutline, 
-  mailOutline 
+  mailOutline,
+  personCircleOutline
 } from 'ionicons/icons';
 import { SupabaseService } from '../services/supabase';
 
@@ -70,6 +71,7 @@ export class RegistroClienteComponent implements OnInit {
     tipo_documento: 'RUC',
     num_documento: '',
     nombre_razon_social: '',
+    persona_responsable: '',
     direccion: '',
     telefono: '',
     email: ''
@@ -84,7 +86,8 @@ export class RegistroClienteComponent implements OnInit {
       personOutline,
       locationOutline,
       callOutline,
-      mailOutline
+      mailOutline,
+      personCircleOutline
     });
   }
 
@@ -118,6 +121,7 @@ export class RegistroClienteComponent implements OnInit {
           tipo_documento: data.tipo_documento || 'RUC',
           num_documento: data.num_documento || '',
           nombre_razon_social: data.nombre_razon_social || '',
+          persona_responsable: data.persona_responsable || '',
           direccion: data.direccion || '',
           telefono: data.telefono || '',
           email: data.email || ''
@@ -144,6 +148,7 @@ export class RegistroClienteComponent implements OnInit {
   cambiarTipoDoc() {
     this.cliente.num_documento = '';
     this.cliente.nombre_razon_social = '';
+    this.cliente.persona_responsable = '';
   }
 
   async guardarCliente() {
@@ -177,6 +182,7 @@ export class RegistroClienteComponent implements OnInit {
             tipo_documento: this.cliente.tipo_documento,
             num_documento: this.cliente.num_documento,
             nombre_razon_social: this.cliente.nombre_razon_social,
+            persona_responsable: esRuc ? this.cliente.persona_responsable.trim() : null,
             direccion: this.cliente.direccion,
             telefono: this.cliente.telefono,
             email: this.cliente.email
@@ -193,6 +199,7 @@ export class RegistroClienteComponent implements OnInit {
               tipo_documento: this.cliente.tipo_documento,
               num_documento: this.cliente.num_documento,
               nombre_razon_social: this.cliente.nombre_razon_social,
+              persona_responsable: esRuc ? this.cliente.persona_responsable.trim() : null,
               direccion: this.cliente.direccion,
               telefono: this.cliente.telefono,
               email: this.cliente.email,

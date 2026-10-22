@@ -101,6 +101,10 @@ export const routes: Routes = [
   path: 'cilindros_proveedores',
     canActivate: [sesionGuard],
   loadComponent: () => import('./CilindrosProveedores/cilindros_proveedores').then(m => m.CilindrosProveedoresPage)
+},
+{
+  path: 'historial-cilindro',
+  loadComponent: () => import('./HistorialdeCilindro/historial_cilindro').then(m => m.HistorialDeCilindroPage)
 }
 
 ];

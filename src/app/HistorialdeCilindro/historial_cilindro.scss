@@ -1,0 +1,414 @@
+/* Fondo General */
+ion-content {
+  --background: #f8fafc;
+}
+
+/* Header & Navbar */
+.custom-toolbar {
+  --background: #ffffff;
+  --border-color: transparent;
+  padding: 4px 12px;
+
+  .btn-back {
+    --color: #00A859;
+    --background: #f0fdf4;
+    --border-radius: 50%;
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-title {
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Buscador */
+ion-searchbar {
+  --background: #f1f5f9;
+  --border-radius: 10px;
+  --placeholder-color: #94a3b8;
+  --icon-color: #00A859;
+  padding: 0;
+}
+
+/* Cargando / sin resultados */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+
+  ion-spinner {
+    color: #00A859;
+  }
+
+  ion-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  h3 {
+    font-weight: 700;
+    color: #475569;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+}
+
+/* Avisos técnicos */
+.diagnostico {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 12px 12px 0;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  color: #78350f;
+  word-break: break-word;
+
+  strong {
+    font-size: 0.72rem;
+    margin-bottom: 2px;
+  }
+}
+
+/* Lista */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+
+  .contador {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+}
+
+.cylinder-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+
+  .card-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+
+    .row-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .row-client .client-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+
+    .row-doc {
+      margin-top: 4px;
+
+      .estado {
+        font-size: 0.72rem;
+        font-weight: 700;
+
+        &.dentro { color: #15803d; }
+        &.fuera { color: #b91c1c; }
+        &.sin { color: #94a3b8; }
+      }
+    }
+  }
+
+  .chevron {
+    color: #00A859;
+    font-size: 1.2rem;
+  }
+}
+
+/* Badges de serie y tipo de gas (mismos colores que la lista de cilindros) */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+
+  &.serie {
+    background-color: #e6f7ef;
+    color: #00A859;
+  }
+
+  &.gas {
+    background-color: #f1f5f9;
+    color: #475569;
+
+    &.gas-oxigeno {
+      background-color: #dcfce7 !important;
+      color: #15803d !important;
+    }
+
+    &.gas-acetileno {
+      background-color: #fee2e2 !important;
+      color: #b91c1c !important;
+    }
+
+    &.gas-estargor {
+      background-color: #fef3c7 !important;
+      color: #78350f !important;
+    }
+
+    &.gas-nitrogeno {
+      background-color: #fef9c3 !important;
+      color: #a16207 !important;
+    }
+
+    &.gas-co2 {
+      background-color: #e2e8f0 !important;
+      color: #334155 !important;
+    }
+  }
+}
+
+/* Modal de historial */
+.detail-card {
+  background: #ffffff;
+  margin: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #00A859;
+    }
+  }
+
+  .owner-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+
+    ion-icon {
+      font-size: 1.3rem;
+      color: #00A859;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: 0.88rem;
+        color: #0f172a;
+      }
+
+      span {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+    }
+  }
+}
+
+/* Botón PDF y secciones del modal */
+.btn-pdf {
+  --border-color: #00A859;
+  --color: #00A859;
+  --border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  margin: 0 0 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 18px 0 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #00A859;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+}
+
+.tenencias {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .tenencia {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+
+    strong {
+      font-size: 0.85rem;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 0.75rem;
+      color: #64748b;
+
+      &.actual {
+        color: #b91c1c;
+        font-weight: 700;
+      }
+
+      &.aqui {
+        color: #15803d;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .timeline-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 8px 0;
+  }
+}
+
+/* Línea de tiempo */
+.timeline {
+  position: relative;
+  padding-left: 6px;
+
+  .timeline-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 16px 0;
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding-bottom: 18px;
+
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 36px;
+      bottom: 0;
+      width: 2px;
+      background: #e2e8f0;
+    }
+
+    .timeline-icon {
+      flex: 0 0 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .timeline-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .ev-titulo {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #0f172a;
+      }
+
+      .ev-detalle,
+      .ev-fecha {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.78rem;
+        color: #64748b;
+
+        ion-icon {
+          font-size: 0.95rem;
+          flex: 0 0 auto;
+        }
+
+        strong {
+          color: #0f172a;
+        }
+      }
+    }
+
+    &.tipo-ingreso .timeline-icon {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    &.tipo-salida .timeline-icon {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    &.tipo-recojo .timeline-icon {
+      background: #fef3c7;
+      color: #a16207;
+    }
+
+    &.tipo-registro .timeline-icon {
+      background: #e6f7ef;
+      color: #00A859;
+    }
+  }
+}

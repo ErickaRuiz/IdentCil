@@ -26,6 +26,153 @@
     </div>
   </div>
 
+  <!-- Buscador de cilindro: escribir o escanear la serie -->
+  <div class="search-card">
+    <div class="search-head">
+      <div class="search-head-icon"><ion-icon name="barcode-outline"></ion-icon></div>
+      <div>
+        <h3>Buscar cilindro</h3>
+        <span>Escribe o escanea la serie para ver dónde está</span>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <div class="search-box">
+        <ion-icon name="search-outline" class="search-icon"></ion-icon>
+        <input type="text" [(ngModel)]="serieBusqueda" name="serieBusqueda" placeholder="N.º de serie"
+          autocomplete="off" autocapitalize="characters" spellcheck="false" (focus)="precargarUbicaciones()"
+          (keyup.enter)="buscarCilindro()" />
+        <button type="button" class="btn-limpiar" *ngIf="serieBusqueda" (click)="limpiarBusqueda()">
+          <ion-icon name="close-circle"></ion-icon>
+        </button>
+      </div>
+      <button type="button" class="btn-scan" (click)="abrirEscaner()" aria-label="Escanear código">
+        <ion-icon name="scan-outline"></ion-icon>
+      </button>
+    </div>
+
+    <button type="button" class="btn-buscar" (click)="buscarCilindro()" [disabled]="buscando || !serieBusqueda.trim()">
+      <ion-spinner *ngIf="buscando" name="crescent"></ion-spinner>
+      <span *ngIf="!buscando">Buscar</span>
+    </button>
+
+    <!-- No encontrado -->
+    <div class="search-empty" *ngIf="noEncontrado">
+      <ion-icon name="help-circle"></ion-icon>
+      <div>
+        <strong>No se encontró ningún cilindro</strong>
+        <span>Revisa la serie o prueba con solo una parte del número.</span>
+      </div>
+    </div>
+
+    <!-- Varias coincidencias -->
+    <div class="sugerencias" *ngIf="sugerencias.length > 0">
+      <span class="sugerencias-titulo">Se encontraron {{ sugerencias.length }} coincidencias, elige una:</span>
+      <button type="button" class="sugerencia-row" *ngFor="let s of sugerencias" (click)="elegirSugerencia(s)"
+        [ngClass]="obtenerClaseGas(s.tipo_gas)">
+        <span class="sug-serie">{{ s.numero_serie }}</span>
+        <span class="sug-gas">{{ s.tipo_gas }}</span>
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Resultado -->
+    <div class="resultado" *ngIf="resultado as r" [ngClass]="obtenerClaseGas(r.cilindro.tipo_gas)">
+
+      <div class="res-cabecera">
+        <h4>{{ r.cilindro.numero_serie }}</h4>
+        <span class="res-gas"><ion-icon name="flask-outline"></ion-icon> {{ r.cilindro.tipo_gas || 'NO ESPECIFICADO'
+          }}</span>
+      </div>
+
+      <!-- Dónde está -->
+      <div class="res-ubicacion" [ngClass]="{
+          'dentro': r.situacion === 'DENTRO',
+          'fuera': r.situacion === 'FUERA',
+          'sin': r.situacion === 'SIN_MOVIMIENTOS',
+          'consultando': r.situacion === 'CONSULTANDO' }">
+        <ng-container *ngIf="r.situacion === 'CONSULTANDO'">
+          <ion-spinner name="crescent"></ion-spinner>
+          <div><strong>Consultando ubicación…</strong></div>
+        </ng-container>
+
+        <ng-container *ngIf="r.situacion === 'DENTRO'">
+          <ion-icon name="checkmark-circle"></ion-icon>
+          <div>
+            <span class="ub-etiqueta">Dentro de planta</span>
+            <strong>{{ r.almacenNombre || 'Sin almacén asignado' }}</strong>
+            <span class="ub-fecha" *ngIf="r.fecha">Ingresó el {{ r.fecha }}</span>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="r.situacion === 'FUERA'">
+          <ion-icon name="alert-circle"></ion-icon>
+          <div>
+            <span class="ub-etiqueta">Fuera de planta · lo tiene</span>
+            <strong>{{ (r.destino || 'Un cliente (sin nombre registrado)') | uppercase }}</strong>
+            <span class="ub-fecha" *ngIf="r.fecha">Salió el {{ r.fecha }}</span>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="r.situacion === 'SIN_MOVIMIENTOS'">
+          <ion-icon name="help-circle"></ion-icon>
+          <div>
+            <span class="ub-etiqueta">Sin movimientos</span>
+            <strong>No tiene ingreso ni salida registrados</strong>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Propietario -->
+      <div class="res-propietario">
+        <ion-icon name="business-outline"></ion-icon>
+        <div>
+          <span class="ub-etiqueta">Propietario</span>
+          <strong>{{ (r.cilindro.clientes?.nombre_razon_social || 'SIN PROPIETARIO') | uppercase }}</strong>
+          <span>{{ r.cilindro.clientes?.tipo_documento || 'DOC' }}: {{ r.cilindro.clientes?.num_documento || '-'
+            }}</span>
+        </div>
+      </div>
+
+      <!-- Datos del cilindro -->
+      <div class="res-grid">
+        <div class="dato"><span class="label">Marca</span><span class="valor">{{ r.cilindro.marca || 'N/A' }}</span>
+        </div>
+        <div class="dato"><span class="label">Año Fab.</span><span class="valor">{{ r.cilindro.anio_fabricacion || 'N/A'
+            }}</span></div>
+        <div class="dato"><span class="label">Unidad de Medida</span><span class="valor">{{ r.cilindro.unidad_medida ||
+            'N/A' }}</span></div>
+        <div class="dato"><span class="label">Peso</span><span class="valor">{{ r.cilindro.peso ? (r.cilindro.peso + '
+            kg') : 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Diámetro</span><span class="valor">{{ r.cilindro.ancho_diametro ?
+            (r.cilindro.ancho_diametro + ' cm') : 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Altura</span><span class="valor">{{ r.cilindro.largo_altura ?
+            (r.cilindro.largo_altura + ' cm') : 'N/A' }}</span></div>
+
+        <div class="dato" *ngIf="r.cilindro.tipo_gas === 'ACETILENO'">
+          <span class="label">Capacidad</span>
+          <span class="valor">{{ r.cilindro.contenido ? (r.cilindro.contenido + ' kg') : 'N/A' }}</span>
+        </div>
+        <ng-container *ngIf="r.cilindro.tipo_gas !== 'ACETILENO'">
+          <div class="dato"><span class="label">Litros</span><span class="valor">{{ r.cilindro.litros ?
+              (r.cilindro.litros + ' L') : 'N/A' }}</span></div>
+          <div class="dato">
+            <span class="label">Capacidad</span>
+            <span class="valor">{{ r.cilindro.contenido ? (r.cilindro.contenido + ' ' + (r.cilindro.unidad_medida ||
+              '')) : 'N/A' }}</span>
+          </div>
+        </ng-container>
+
+        <div class="dato"><span class="label">Color</span><span class="valor">{{ r.cilindro.color || 'N/A' }}</span>
+        </div>
+        <div class="dato"><span class="label">Prueba Hidr. (PH)</span><span class="valor highlight">{{ r.cilindro.ph ||
+            'N/A' }}</span></div>
+        <div class="dato"><span class="label">Procedencia</span><span class="valor">{{ r.cilindro.procedencia || 'N/A'
+            }}</span></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Cuadrícula de Módulos Principal -->
   <div class="modules-grid">
     <ion-card class="module-card" (click)="navegarA('/ingreso')">
@@ -59,24 +206,34 @@
     </ion-card>
 
     <ion-card class="module-card" (click)="navegarA('/registrocliente')">
-  <ion-card-content>
-    <div class="icon-wrapper clientes">
-      <ion-icon name="business-outline"></ion-icon>
-    </div>
-    <h3>Registro de clientes</h3>
-    <p>Registro de empresas y RUC para asignación</p>
-  </ion-card-content>
-</ion-card>
+      <ion-card-content>
+        <div class="icon-wrapper clientes">
+          <ion-icon name="business-outline"></ion-icon>
+        </div>
+        <h3>Registro de clientes</h3>
+        <p>Registro de empresas y RUC para asignación</p>
+      </ion-card-content>
+    </ion-card>
 
-<ion-card class="module-card" (click)="navegarA('/listaclientes')">
-  <ion-card-content>
-    <div class="icon-wrapper clientes">
-      <ion-icon name="people-outline"></ion-icon>
-    </div>
-    <h3>Lista de Clientes</h3>
-    <p>Ver, editar o eliminar registros de clientes</p>
-  </ion-card-content>
-</ion-card>
+    <ion-card class="module-card" (click)="navegarA('/listaclientes')">
+      <ion-card-content>
+        <div class="icon-wrapper clientes">
+          <ion-icon name="people-outline"></ion-icon>
+        </div>
+        <h3>Lista de Clientes</h3>
+        <p>Ver, editar o eliminar registros de clientes</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="module-card" (click)="navegarA('/historial-cilindro')">
+      <ion-card-content>
+        <div class="icon-wrapper reportes">
+          <ion-icon name="time-outline"></ion-icon>
+        </div>
+        <h3>Historial de Cilindros</h3>
+        <p>Consultar el historial de cada cilindro</p>
+      </ion-card-content>
+    </ion-card>
 
     <ion-card class="module-card" (click)="navegarA('/reportes')">
       <ion-card-content>

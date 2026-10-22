@@ -46,6 +46,7 @@ ion-searchbar {
   text-transform: uppercase;
 
   .client-info {
+    cursor: pointer;
     flex: 1;
     min-width: 0;
     padding-right: 8px;
@@ -147,4 +148,182 @@ ion-searchbar {
       }
     }
   }
+}
+
+/* ===================== DETALLE DEL CLIENTE ===================== */
+.detail-content {
+  --background: #f4f6f8;
+}
+
+.detail-hero {
+  background: linear-gradient(160deg, #00a650 0%, #00854a 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 24px 16px 40px;
+  border-radius: 0 0 28px 28px;
+
+  .hero-avatar {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      font-size: 2rem;
+      color: #ffffff;
+    }
+  }
+
+  .hero-name {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #e6f0ff;
+    color: #0052cc;
+
+    &.ruc {
+      background: #e6f9ed;
+      color: #00875a;
+    }
+  }
+}
+
+.detail-body {
+  margin: -22px 12px 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 8px 16px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eef0f3;
+
+  &.column {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .info-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .info-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #e6f9ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      font-size: 1.1rem;
+      color: #00a650;
+    }
+  }
+
+  .info-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .info-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #6b778c;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .info-value {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #172b4d;
+    word-break: break-word;
+  }
+}
+
+.contact-item {
+  width: 100%;
+  background: #f8fafb;
+  border: 1px solid #e8ebef;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .contact-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #172b4d;
+
+    &.email {
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+  }
+
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.btn-contact {
+  flex: 1;
+  min-width: 110px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #ffffff;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &.whatsapp { background: #25d366; }
+  &.call     { background: #0052cc; }
+  &.mail     { background: #f59e0b; }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.btn-editar {
+  margin-top: 18px;
+  --background: #00a650;
+  --border-radius: 12px;
+  font-weight: 700;
 }

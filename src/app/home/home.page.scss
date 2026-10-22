@@ -118,6 +118,11 @@ p {
       background-color: rgba(225, 29, 72, 0.15);
       color: #e11d48;
     }
+
+    &.historial {
+      background-color: rgba(13, 148, 136, 0.15);
+      color: #0d9488;
+    }
   }
 
   h3 {
@@ -142,6 +147,418 @@ p {
     .logo-img {
       max-width: 130px;
       height: auto;
+    }
+  }
+}
+
+
+/* ===================== BUSCADOR DE CILINDRO ===================== */
+.search-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e8ebef;
+
+  .search-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    .search-head-icon {
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      border-radius: 12px;
+      background: #e6f9ed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      ion-icon {
+        font-size: 24px;
+        color: #00a650;
+      }
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+  }
+
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    height: 48px;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    &:focus-within {
+      border-color: #00a650;
+      background: #ffffff;
+    }
+
+    .search-icon {
+      font-size: 20px;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: #0f172a;
+      text-transform: uppercase;
+
+      &::placeholder {
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+        color: #94a3b8;
+      }
+    }
+
+    .btn-limpiar {
+      background: none;
+      border: none;
+      padding: 0;
+      display: flex;
+      cursor: pointer;
+
+      ion-icon {
+        font-size: 20px;
+        color: #cbd5e1;
+      }
+    }
+  }
+
+  .btn-scan {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #05a65b 0%, #037a43 100%);
+    box-shadow: 0 3px 8px rgba(5, 166, 91, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    ion-icon {
+      font-size: 26px;
+      color: #ffffff;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .btn-buscar {
+    width: 100%;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: #177c4d;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-spinner {
+      width: 20px;
+      height: 20px;
+      color: #ffffff;
+    }
+
+    &:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):active {
+      opacity: 0.85;
+    }
+  }
+}
+
+/* No encontrado */
+.search-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+
+  ion-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    color: #94a3b8;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.88rem;
+    color: #0f172a;
+  }
+
+  span {
+    font-size: 0.78rem;
+  }
+}
+
+/* Varias coincidencias */
+.sugerencias {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .sugerencias-titulo {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+
+  .sugerencia-row {
+    --gas-color: #64748b;
+    --gas-text: #475569;
+    --gas-bg: #f1f5f9;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid var(--gas-color);
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+
+    .sug-serie {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .sug-gas {
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: var(--gas-bg);
+      color: var(--gas-text);
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    ion-icon {
+      font-size: 16px;
+      color: #cbd5e1;
+    }
+
+    &:active {
+      background: var(--gas-bg);
+    }
+  }
+}
+
+/* Colores por gas (compartidos por sugerencias y resultado) */
+.sugerencia-row,
+.resultado {
+  &.gas-oxigeno   { --gas-color: #16a34a; --gas-text: #15803d; --gas-bg: #dcfce7; }
+  &.gas-acetileno { --gas-color: #dc2626; --gas-text: #b91c1c; --gas-bg: #fee2e2; }
+  &.gas-argon     { --gas-color: #92400e; --gas-text: #78350f; --gas-bg: #f1e2d3; }
+  &.gas-nitrogeno { --gas-color: #eab308; --gas-text: #854d0e; --gas-bg: #fef9c3; }
+  &.gas-co2       { --gas-color: #6b7280; --gas-text: #374151; --gas-bg: #e5e7eb; }
+  &.gas-mezcla    { --gas-color: #f97316; --gas-text: #9a3412; --gas-bg: linear-gradient(135deg, #fed7aa 0%, #fef08a 100%); }
+}
+
+/* Resultado de la búsqueda */
+.resultado {
+  --gas-color: #64748b;
+  --gas-text: #475569;
+  --gas-bg: #f1f5f9;
+
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-left: 6px solid var(--gas-color);
+  border-radius: 14px;
+  background: #ffffff;
+
+  .res-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    h4 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #0f172a;
+      word-break: break-all;
+    }
+
+    .res-gas {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--gas-bg);
+      color: var(--gas-text);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+  }
+
+  .ub-etiqueta {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    opacity: 0.8;
+  }
+
+  .ub-fecha {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .res-ubicacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: #f1f5f9;
+    color: #475569;
+
+    > ion-icon {
+      font-size: 30px;
+      flex-shrink: 0;
+    }
+
+    ion-spinner {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    &.dentro { background: #dcfce7; color: #166534; }
+    &.fuera  { background: #ffedd5; color: #9a3412; }
+    &.sin    { background: #f1f5f9; color: #475569; }
+    &.consultando { background: #f1f5f9; color: #64748b; }
+  }
+
+  .res-propietario {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #eef0f3;
+    margin-bottom: 14px;
+    color: #475569;
+    font-size: 0.8rem;
+
+    > ion-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    strong {
+      display: block;
+      font-size: 0.9rem;
+      color: #0f172a;
+    }
+  }
+
+  .res-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 10px;
+
+    .dato {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+
+      .label {
+        font-size: 0.64rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+      }
+
+      .valor {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #0f172a;
+
+        &.highlight {
+          color: #00a650;
+        }
+      }
     }
   }
 }

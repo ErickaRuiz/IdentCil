@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavController } from '@ionic/angular';
@@ -50,7 +50,7 @@ import { arrowBackOutline, addCircleOutline, trashOutline, listOutline, business
     IonSearchbar
   ]
 })
-export class AlmacenesPage {
+export class AlmacenesPage implements OnInit {
 
   nuevoAlmacen = {
     nombre: '',
@@ -77,6 +77,17 @@ export class AlmacenesPage {
   cilindrosDelAlmacenFiltrados: any[] = [];
   filtroCilindroAlmacen: string = '';
 
+  // --- Modal: detalle de UN cilindro ---
+  modalDetalleAbierto: boolean = false;
+  cilindroDetalle: any = null;
+
+  // --- Caché para que la lista cargue rápido ---
+  private readonly TTL_ESTADOS_MS = 30000;
+  private estadosCache: Awaited<ReturnType<typeof cargarEstados>> | null = null;
+  private estadosCacheTs = 0;
+  private estadosPromesa: Promise<Awaited<ReturnType<typeof cargarEstados>>> | null = null;
+  private cacheCilindrosPorAlmacen: { [id: number]: any[] } = {};
+
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
@@ -86,18 +97,58 @@ export class AlmacenesPage {
   }
 
 
+  ngOnInit() {
+    // Precarga en segundo plano: cuando toques "Ver Lista" ya estará listo
+    this.obtenerAlmacenes(true);
+  }
+
   regresar() {
     this.navCtrl.back();
   }
 
-  async abrirModalAlmacenes() {
-    this.modalAbierto = true;
-    await this.obtenerAlmacenes();
+  trackPorId(_: number, item: any) {
+    return item.id;
   }
 
-  async obtenerAlmacenes() {
-    this.cargandoLista = true;
+  trackPorSerie(_: number, item: any) {
+    return item.numeroSerie;
+  }
+
+  /**
+   * Devuelve los estados de los cilindros. Reutiliza el resultado reciente
+   * (30 s) y evita lanzar dos cargas iguales al mismo tiempo.
+   */
+  private async obtenerEstados(forzar = false) {
+    const vigente = this.estadosCache && (Date.now() - this.estadosCacheTs) < this.TTL_ESTADOS_MS;
+    if (vigente && !forzar) return this.estadosCache!;
+
+    if (this.estadosPromesa) return this.estadosPromesa;
+
+    this.estadosPromesa = cargarEstados(this.supabaseService.supabase)
+      .then(estados => {
+        this.estadosCache = estados;
+        this.estadosCacheTs = Date.now();
+        return estados;
+      })
+      .finally(() => {
+        this.estadosPromesa = null;
+      });
+
+    return this.estadosPromesa;
+  }
+
+  async abrirModalAlmacenes() {
+    this.modalAbierto = true;
     this.cdRef.detectChanges();
+    // Si ya hay lista, se muestra al instante y se actualiza en segundo plano
+    await this.obtenerAlmacenes(this.listaAlmacenes.length > 0);
+  }
+
+  async obtenerAlmacenes(silencioso = false) {
+    if (!silencioso) {
+      this.cargandoLista = true;
+      this.cdRef.detectChanges();
+    }
 
     try {
       const { data, error } = await this.supabaseService.supabase
@@ -110,14 +161,15 @@ export class AlmacenesPage {
       } else if (data) {
         this.listaAlmacenes = data;
       }
-
-      await this.calcularCantidadPorAlmacen();
     } catch (err) {
       console.error('Error de red al cargar:', err);
     } finally {
+      // La lista ya se puede ver; las cantidades se calculan aparte
       this.cargandoLista = false;
       this.cdRef.detectChanges();
     }
+
+    await this.calcularCantidadPorAlmacen();
   }
 
   /**
@@ -127,7 +179,7 @@ export class AlmacenesPage {
    */
   async calcularCantidadPorAlmacen() {
     try {
-      const estados = await cargarEstados(this.supabaseService.supabase);
+      const estados = await this.obtenerEstados();
       const conteo: { [id: number]: number } = {};
 
       estados.forEach((e: EstadoCilindro) => {
@@ -137,78 +189,115 @@ export class AlmacenesPage {
       });
 
       this.cantidadPorAlmacen = conteo;
+      this.cdRef.detectChanges();
     } catch (err) {
       console.error('Error al calcular cilindros por almacén:', err);
     }
   }
 
   /**
-   * Abre el modal con el detalle completo (marca, año, medidas, PH,
-   * propietario, etc.) de cada cilindro que está DENTRO de este almacén.
+   * Abre la lista de series de los cilindros DENTRO de este almacén.
+   * Si ya se cargó antes, se muestra al instante y se actualiza en segundo plano.
    */
   async verCilindrosDeAlmacen(almacen: any) {
     this.almacenSeleccionado = almacen;
     this.filtroCilindroAlmacen = '';
     this.modalAbierto = false;
     this.modalCilindrosAbierto = true;
-    this.cargandoCilindros = true;
-    this.cilindrosDelAlmacen = [];
-    this.cilindrosDelAlmacenFiltrados = [];
-    this.cdRef.detectChanges();
 
+    const enCache = this.cacheCilindrosPorAlmacen[almacen.id];
+    if (enCache) {
+      this.cilindrosDelAlmacen = enCache;
+      this.cargandoCilindros = false;
+      this.filtrarCilindrosDelAlmacen();
+      this.cdRef.detectChanges();
+      await this.cargarCilindrosDeAlmacen(almacen, true);
+    } else {
+      this.cargandoCilindros = true;
+      this.cilindrosDelAlmacen = [];
+      this.cilindrosDelAlmacenFiltrados = [];
+      this.cdRef.detectChanges();
+      await this.cargarCilindrosDeAlmacen(almacen, false);
+    }
+  }
+
+  private async cargarCilindrosDeAlmacen(almacen: any, refrescando: boolean) {
     try {
-      const estados = await cargarEstados(this.supabaseService.supabase);
+      const estados = await this.obtenerEstados(refrescando);
       const series = Array.from(estados.values())
         .filter((e: EstadoCilindro) => estaDentro(e) && e.almacenId === almacen.id)
         .map((e: EstadoCilindro) => e.serie);
 
-      if (series.length === 0) {
-        this.cilindrosDelAlmacen = [];
-      } else {
-        const { data, error } = await this.supabaseService.supabase
-          .from('cilindros')
-          .select(`
-            *,
-            clientes (
-              nombre_razon_social,
-              tipo_documento,
-              num_documento
-            )
-          `)
-          .in('numero_serie', series);
+      let lista: any[] = [];
 
-        if (error) {
-          console.error('Error al cargar los cilindros del almacén:', error);
-          this.cilindrosDelAlmacen = [];
-        } else {
-          this.cilindrosDelAlmacen = (data || [])
-            .map((c: any) => ({
-              numeroSerie: c.numero_serie,
-              tipoGas: c.tipo_gas || 'NO ESPECIFICADO',
-              marca: c.marca,
-              anioFabricacion: c.anio_fabricacion,
-              unidadMedida: c.unidad_medida,
-              peso: c.peso,
-              anchoDiametro: c.ancho_diametro,
-              largoAltura: c.largo_altura,
-              litros: c.litros,
-              contenido: c.contenido,
-              color: c.color,
-              ph: c.ph,
-              procedencia: c.procedencia,
-              propietarioNombre: c.clientes?.nombre_razon_social || 'SIN PROPIETARIO',
-              propietarioDocTipo: c.clientes?.tipo_documento || 'DOC',
-              propietarioDocNum: c.clientes?.num_documento || '-'
-            }))
-            .sort((a: any, b: any) => normalizarSerie(a.numeroSerie).localeCompare(normalizarSerie(b.numeroSerie)));
+      if (series.length > 0) {
+        // Consultas en paralelo por tandas, para que no se arme una URL gigante
+        const tandas: string[][] = [];
+        for (let i = 0; i < series.length; i += 150) {
+          tandas.push(series.slice(i, i + 150));
         }
+
+        const resultados = await Promise.all(
+          tandas.map(tanda =>
+            this.supabaseService.supabase
+              .from('cilindros')
+              .select(`
+                numero_serie, tipo_gas, marca, anio_fabricacion, unidad_medida,
+                peso, ancho_diametro, largo_altura, litros, contenido, color, ph,
+                procedencia,
+                clientes ( nombre_razon_social, tipo_documento, num_documento )
+              `)
+              .in('numero_serie', tanda)
+          )
+        );
+
+        for (const r of resultados) {
+          if (r.error) {
+            console.error('Error al cargar los cilindros del almacén:', r.error);
+            continue;
+          }
+          lista = lista.concat(r.data || []);
+        }
+
+        lista = lista
+          .map((c: any) => ({
+            numeroSerie: c.numero_serie,
+            tipoGas: c.tipo_gas || 'NO ESPECIFICADO',
+            marca: c.marca,
+            anioFabricacion: c.anio_fabricacion,
+            unidadMedida: c.unidad_medida,
+            peso: c.peso,
+            anchoDiametro: c.ancho_diametro,
+            largoAltura: c.largo_altura,
+            litros: c.litros,
+            contenido: c.contenido,
+            color: c.color,
+            ph: c.ph,
+            procedencia: c.procedencia,
+            propietarioNombre: c.clientes?.nombre_razon_social || 'SIN PROPIETARIO',
+            propietarioDocTipo: c.clientes?.tipo_documento || 'DOC',
+            propietarioDocNum: c.clientes?.num_documento || '-'
+          }))
+          .sort((a: any, b: any) => normalizarSerie(a.numeroSerie).localeCompare(normalizarSerie(b.numeroSerie)));
+      }
+
+      this.cacheCilindrosPorAlmacen[almacen.id] = lista;
+
+      // Solo se pinta si el usuario sigue viendo este mismo almacén
+      if (this.almacenSeleccionado?.id === almacen.id) {
+        this.cilindrosDelAlmacen = lista;
+        this.filtrarCilindrosDelAlmacen();
       }
     } catch (err) {
       console.error('Error inesperado al cargar los cilindros del almacén:', err);
-      this.cilindrosDelAlmacen = [];
+      if (!refrescando && this.almacenSeleccionado?.id === almacen.id) {
+        this.cilindrosDelAlmacen = [];
+        this.filtrarCilindrosDelAlmacen();
+      }
     } finally {
-      this.filtrarCilindrosDelAlmacen();
-      this.cargandoCilindros = false;
+      if (this.almacenSeleccionado?.id === almacen.id) {
+        this.cargandoCilindros = false;
+      }
       this.cdRef.detectChanges();
     }
   }
@@ -218,6 +307,17 @@ export class AlmacenesPage {
     this.almacenSeleccionado = null;
     this.cilindrosDelAlmacen = [];
     this.cilindrosDelAlmacenFiltrados = [];
+  }
+
+  // --- Detalle de un cilindro (al tocar su número de serie) ---
+  verDetalleCilindro(cilindro: any) {
+    this.cilindroDetalle = cilindro;
+    this.modalDetalleAbierto = true;
+  }
+
+  cerrarDetalleCilindro() {
+    this.modalDetalleAbierto = false;
+    this.cilindroDetalle = null;
   }
 
   filtrarCilindrosDelAlmacen(event?: any) {
@@ -253,12 +353,14 @@ export class AlmacenesPage {
       .trim()
       .toUpperCase();
 
+    // Las mezclas (Stargold / Estargold / Estargor) van primero para que
+    // no se confundan con "ARGON" cuando el nombre lo contiene.
+    if (valor.includes('STARGOLD') || valor.includes('STARGOR') || valor.includes('MEZCLA')) return 'gas-mezcla';
     if (valor.includes('OXIGENO')) return 'gas-oxigeno';
     if (valor.includes('ACETILENO')) return 'gas-acetileno';
     if (valor.includes('ARGON')) return 'gas-argon';
     if (valor.includes('NITROGENO')) return 'gas-nitrogeno';
-    if (valor.includes('DIOXIDO') || valor === 'CO2') return 'gas-co2';
-    if (valor.includes('MEZCLA')) return 'gas-mezcla';
+    if (valor.includes('DIOXIDO') || valor === 'CO2' || valor.includes('CO2')) return 'gas-co2';
 
     return '';
   }

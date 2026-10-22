@@ -25,7 +25,7 @@
     <!-- Vista Ultra Compacta con RUC/DNI Arriba -->
     <div *ngIf="!cargando && clientesFiltrados.length > 0" class="list-container">
         <div class="client-card-mini" *ngFor="let cliente of clientesFiltrados">
-            <div class="client-info">
+            <div class="client-info" (click)="verDetalle(cliente)">
                 <div class="row-badge">
                     <span class="badge" [class.ruc]="cliente.tipo_documento === 'RUC'">
                         {{ cliente.tipo_documento }}: {{ cliente.num_documento }}
@@ -55,41 +55,100 @@
             </div>
         </div>
     </div>
-    <!-- Modal para Editar Cliente -->
-    <ion-modal [isOpen]="modalEdicionAbierto" (didDismiss)="cerrarModal()">
+    <!-- MODAL DE DETALLE DEL CLIENTE -->
+    <ion-modal [isOpen]="detalleAbierto" (didDismiss)="cerrarDetalle()">
         <ng-template>
-            <ion-header>
+            <ion-header class="ion-no-border">
                 <ion-toolbar class="custom-toolbar">
-                    <ion-title>Editar Cliente</ion-title>
+                    <ion-title>Detalle del Cliente</ion-title>
                     <ion-buttons slot="end">
-                        <ion-button color="light" (click)="cerrarModal()">Cerrar</ion-button>
+                        <ion-button color="light" (click)="cerrarDetalle()">Cerrar</ion-button>
                     </ion-buttons>
                 </ion-toolbar>
             </ion-header>
-            <ion-content class="ion-padding">
-                <form (ngSubmit)="actualizarCliente()">
-                    <ion-item class="custom-item">
-                        <ion-label position="stacked">Documento</ion-label>
-                        <ion-input [(ngModel)]="clienteSeleccionado.num_documento" name="num_documento"></ion-input>
-                    </ion-item>
-                    <ion-item class="custom-item">
-                        <ion-label position="stacked">Nombre / Razón Social</ion-label>
-                        <ion-input [(ngModel)]="clienteSeleccionado.nombre_razon_social"
-                            name="nombre_razon_social"></ion-input>
-                    </ion-item>
-                    <ion-item class="custom-item">
-                        <ion-label position="stacked">Dirección</ion-label>
-                        <ion-input [(ngModel)]="clienteSeleccionado.direccion" name="direccion"></ion-input>
-                    </ion-item>
-                    <ion-item class="custom-item">
-                        <ion-label position="stacked">Teléfono</ion-label>
-                        <ion-input [(ngModel)]="clienteSeleccionado.telefono" name="telefono"></ion-input>
-                    </ion-item>
 
-                    <ion-button expand="block" type="submit" class="submit-btn" style="margin-top: 20px;">
-                        Guardar Cambios
+            <ion-content class="detail-content" *ngIf="clienteDetalle">
+
+                <!-- Cabecera -->
+                <div class="detail-hero">
+                    <div class="hero-avatar">
+                        <ion-icon [name]="clienteDetalle.tipo_documento === 'RUC' ? 'business-outline' : 'person-outline'"></ion-icon>
+                    </div>
+                    <h2 class="hero-name">{{ clienteDetalle.nombre_razon_social | uppercase }}</h2>
+                    <span class="hero-badge" [class.ruc]="clienteDetalle.tipo_documento === 'RUC'">
+                        {{ clienteDetalle.tipo_documento }}: {{ clienteDetalle.num_documento }}
+                    </span>
+                </div>
+
+                <div class="detail-body">
+
+                    <!-- Persona responsable (solo empresas) -->
+                    <div class="info-row" *ngIf="clienteDetalle.persona_responsable">
+                        <div class="info-icon"><ion-icon name="person-circle-outline"></ion-icon></div>
+                        <div class="info-text">
+                            <span class="info-label">Persona responsable</span>
+                            <span class="info-value">{{ clienteDetalle.persona_responsable | uppercase }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="info-row" *ngIf="clienteDetalle.direccion">
+                        <div class="info-icon"><ion-icon name="location-outline"></ion-icon></div>
+                        <div class="info-text">
+                            <span class="info-label">Dirección</span>
+                            <span class="info-value">{{ clienteDetalle.direccion | uppercase }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Teléfonos: WhatsApp y llamada -->
+                    <div class="info-row column" *ngIf="telefonosDetalle.length > 0">
+                        <div class="info-head">
+                            <div class="info-icon"><ion-icon name="call-outline"></ion-icon></div>
+                            <span class="info-label">Teléfono</span>
+                        </div>
+                        <div class="contact-item" *ngFor="let t of telefonosDetalle">
+                            <span class="contact-text">{{ t.texto }}</span>
+                            <div class="contact-actions">
+                                <a *ngIf="t.wa" class="btn-contact whatsapp" [href]="t.wa" target="_blank" rel="noopener">
+                                    <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+                                </a>
+                                <a class="btn-contact call" [href]="t.tel">
+                                    <ion-icon name="call-outline"></ion-icon> Llamar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Correos: abre la app de correo -->
+                    <div class="info-row column" *ngIf="correosDetalle.length > 0">
+                        <div class="info-head">
+                            <div class="info-icon"><ion-icon name="mail-outline"></ion-icon></div>
+                            <span class="info-label">Correo electrónico</span>
+                        </div>
+                        <div class="contact-item" *ngFor="let c of correosDetalle">
+                            <span class="contact-text email">{{ c.texto }}</span>
+                            <div class="contact-actions">
+                                <a class="btn-contact mail" [href]="c.mailto">
+                                    <ion-icon name="mail-outline"></ion-icon> Enviar correo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fecha de registro -->
+                    <div class="info-row" *ngIf="clienteDetalle.fecha_registro">
+                        <div class="info-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+                        <div class="info-text">
+                            <span class="info-label">Fecha de registro</span>
+                            <span class="info-value">{{ clienteDetalle.fecha_registro | date:'dd/MM/yyyy' }}</span>
+                        </div>
+                    </div>
+
+                    <ion-button expand="block" class="btn-editar" (click)="editarDesdeDetalle()">
+                        <ion-icon name="create-outline" slot="start"></ion-icon>
+                        Editar cliente
                     </ion-button>
-                </form>
+                </div>
             </ion-content>
         </ng-template>
     </ion-modal>
