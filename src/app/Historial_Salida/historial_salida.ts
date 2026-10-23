@@ -1,6 +1,7 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NavController, AlertController, ToastController } from '@ionic/angular';
 import {
   IonHeader,
@@ -15,15 +16,12 @@ import {
   IonSpinner,
   IonCard,
   IonCardContent,
-  IonModal,
-  IonItem,
-  IonLabel,
-  IonSelect,
-  IonSelectOption,
-  IonInput
+  IonModal
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
+import { jsPDF } from 'jspdf';
 import {
+  downloadOutline,
   arrowBackOutline,
   documentTextOutline,
   timeOutline,
@@ -56,12 +54,7 @@ import { normalizarSerie } from '../services/cilindro-estado';
     IonSpinner,
     IonCard,
     IonCardContent,
-    IonModal,
-    IonItem,
-    IonLabel,
-    IonSelect,
-    IonSelectOption,
-    IonInput
+    IonModal
   ]
 })
 export class HistorialSalidasPage {
@@ -85,21 +78,15 @@ export class HistorialSalidasPage {
   modalDetalleAbierto: boolean = false;
   itemSeleccionado: any = null;
 
-  // --- Edición / Modal ---
-  modalEditarAbierto: boolean = false;
-  itemEditando: any = null;
-  formEdicion: any = { estado: '', almacenDestinoId: null, observacion: '', cilindros: [] };
-  serieNuevaEdicion: string = '';
-  guardandoEdicion: boolean = false;
-
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
     private alertController: AlertController,
     private toastCtrl: ToastController,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private router: Router
   ) {
-    addIcons({ arrowBackOutline, documentTextOutline, timeOutline, createOutline, trashOutline, addCircleOutline, checkmarkDoneOutline });
+    addIcons({ downloadOutline, arrowBackOutline, documentTextOutline, timeOutline, createOutline, trashOutline, addCircleOutline, checkmarkDoneOutline });
   }
 
   ionViewWillEnter() {
@@ -221,7 +208,8 @@ export class HistorialSalidasPage {
             id,
             nombre_razon_social,
             num_documento,
-            tipo_documento
+            tipo_documento,
+            direccion
           )
         `)
         .order('created_at', { ascending: false })
@@ -260,6 +248,17 @@ export class HistorialSalidasPage {
     return item?.clientes?.num_documento || '';
   }
 
+  // Dirección del cliente/empresa según su registro de clientes. Si el cliente ya no
+  // tiene dirección, se usa la que quedó guardada con los cilindros de la salida.
+  obtenerDireccionEntidad(item: any): string {
+    const delRegistro = item?.clientes?.direccion;
+    if (delRegistro && String(delRegistro).trim()) return String(delRegistro).trim();
+
+    const lista: any[] = Array.isArray(item?.cilindros_egresados) ? item.cilindros_egresados : [];
+    const guardada = lista.find((c: any) => c?.destino_direccion)?.destino_direccion;
+    return guardada ? String(guardada).trim() : '';
+  }
+
   // De dónde salió el cilindro
   obtenerNombreAlmacen(item: any): string {
     if (item?.almacen_id && this.mapaAlmacenes[item.almacen_id]) {
@@ -276,6 +275,171 @@ export class HistorialSalidasPage {
     return item?.almacen_destino_id ? `Almacén #${item.almacen_destino_id}` : '';
   }
 
+  // ===== COMPROBANTE DE ENTREGA EN PDF =====
+
+  /**
+   * Genera el comprobante de entrega al cliente: datos del cliente, su
+   * ubicación, el almacén de salida, la fecha y hora, y todos los cilindros
+   * que se llevó con su gas y capacidad.
+   */
+  descargarComprobante(item: any, event?: Event) {
+    event?.stopPropagation();
+    if (!item) return;
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const M = 14;
+    const ANCHO = 210;
+    let y = M;
+
+    const asegurarEspacio = (alto: number) => {
+      if (y + alto > 280) {
+        doc.addPage();
+        y = M;
+      }
+    };
+
+    const fecha = new Date(item.created_at);
+    const fechaTxt = isNaN(fecha.getTime()) ? '-' :
+      fecha.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    const horaTxt = isNaN(fecha.getTime()) ? '-' :
+      fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const numero = String(item.id ?? '').padStart(6, '0');
+
+    // Cilindros que se entregaron en esta salida (todos los del registro)
+    const cilindros: any[] = Array.isArray(item.cilindros_egresados) ? item.cilindros_egresados : [];
+
+    // --- Encabezado ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('ELECTRAMETAL NORPERÚ S.A.C.', M, y + 5);
+    doc.setFontSize(10);
+    doc.text(`N° ${numero}`, ANCHO - M, y + 5, { align: 'right' });
+    y += 11;
+    doc.setFontSize(13);
+    doc.text('COMPROBANTE DE ENTREGA DE CILINDROS', M, y);
+    y += 3;
+    doc.setDrawColor(225, 29, 72);
+    doc.setLineWidth(0.6);
+    doc.line(M, y, ANCHO - M, y);
+    y += 8;
+
+    // --- Datos de la salida y del cliente ---
+    const fila = (etiqueta: string, valor: string) => {
+      const lineas: string[] = doc.splitTextToSize(valor || '-', ANCHO - M * 2 - 42);
+      asegurarEspacio(lineas.length * 5 + 2);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text(`${etiqueta}:`, M, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(lineas, M + 42, y);
+      y += lineas.length * 5 + 1.5;
+    };
+
+    const clienteDoc = item?.clientes
+      ? `${item.clientes.tipo_documento || 'DOC'}: ${item.clientes.num_documento || '-'}`
+      : '-';
+
+    fila('Fecha de salida', fechaTxt);
+    fila('Hora de salida', horaTxt);
+    fila('Cliente / Empresa', this.obtenerNombreEntidad(item));
+    fila('Documento', clienteDoc);
+    fila('Dirección / Ubicación', this.obtenerDireccionEntidad(item) || 'No registrada');
+    fila('Salió del almacén', this.obtenerNombreAlmacen(item));
+    const destino = this.obtenerNombreAlmacenDestino(item);
+    if (destino) fila('Transferido al almacén', destino);
+    y += 4;
+
+    // --- Tabla de cilindros ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Cilindros entregados (${cilindros.length})`, M, y);
+    y += 6;
+
+    const encabezadoTabla = () => {
+      doc.setFillColor(253, 232, 236);
+      doc.rect(M, y - 4.5, ANCHO - M * 2, 7, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('N°', M + 2, y);
+      doc.text('Serie', M + 14, y);
+      doc.text('Tipo de gas', M + 70, y);
+      doc.text('Capacidad', M + 130, y);
+      y += 6;
+    };
+    encabezadoTabla();
+
+    doc.setFont('helvetica', 'normal');
+    cilindros.forEach((c: any, i: number) => {
+      if (y + 7 > 280) {
+        doc.addPage();
+        y = M;
+        encabezadoTabla();
+        doc.setFont('helvetica', 'normal');
+      }
+      doc.setFontSize(9);
+      doc.text(String(i + 1), M + 2, y);
+      doc.text(String(c?.numero_serie || '-'), M + 14, y);
+      doc.text(String(c?.tipo_gas || '-').toUpperCase(), M + 70, y);
+      doc.text(String(c?.capacidad || '-'), M + 130, y);
+      y += 6;
+    });
+    y += 2;
+
+    // --- Resumen: unidades por tipo de gas y capacidad ---
+    const resumen = new Map<string, number>();
+    cilindros.forEach((c: any) => {
+      const clave = `${String(c?.tipo_gas || 'SIN GAS').toUpperCase()} · ${c?.capacidad || 'sin capacidad'}`;
+      resumen.set(clave, (resumen.get(clave) || 0) + 1);
+    });
+
+    asegurarEspacio(14 + resumen.size * 5);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, ANCHO - M, y);
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`TOTAL DE UNIDADES: ${cilindros.length}`, M, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    resumen.forEach((cantidad, clave) => {
+      asegurarEspacio(6);
+      doc.text(`• ${cantidad} × ${clave}`, M + 2, y);
+      y += 5;
+    });
+
+    // --- Observación ---
+    if (item.observacion) {
+      y += 3;
+      const lineas: string[] = doc.splitTextToSize(`Observación: ${item.observacion}`, ANCHO - M * 2);
+      asegurarEspacio(lineas.length * 5 + 4);
+      doc.setFont('helvetica', 'italic');
+      doc.text(lineas, M, y);
+      y += lineas.length * 5;
+    }
+
+    // --- Firmas ---
+    asegurarEspacio(40);
+    y += 22;
+    doc.setDrawColor(100, 116, 139);
+    doc.setLineWidth(0.3);
+    doc.line(M + 6, y, M + 78, y);
+    doc.line(ANCHO - M - 78, y, ANCHO - M - 6, y);
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('ENTREGADO POR', M + 42, y, { align: 'center' });
+    doc.text('RECIBIDO CONFORME (CLIENTE)', ANCHO - M - 42, y, { align: 'center' });
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('ELECTRAMETAL NORPERÚ S.A.C.', M + 42, y, { align: 'center' });
+    doc.text('Nombre, DNI y firma', ANCHO - M - 42, y, { align: 'center' });
+
+    doc.save(`comprobante_entrega_${numero}.pdf`);
+  }
+
   verDetalle(item: any) {
     this.itemSeleccionado = item;
     this.modalDetalleAbierto = true;
@@ -286,88 +450,12 @@ export class HistorialSalidasPage {
     this.itemSeleccionado = null;
   }
 
-  // --- Editar ---
-  abrirEditar(item: any, event: Event) {
-    event.stopPropagation();
-    this.itemEditando = item;
-    this.formEdicion = {
-      estado: item.estado || 'LLENO',
-      almacenDestinoId: item.almacen_destino_id || null,
-      observacion: item.observacion || '',
-      cilindros: (item.cilindros_egresados || []).map((c: any) => ({ ...c }))
-    };
-    this.serieNuevaEdicion = '';
-    this.modalEditarAbierto = true;
-  }
+  // --- Editar: abre el formulario completo de Salida con este registro cargado ---
+  abrirEditar(item: any, event?: Event) {
+    event?.stopPropagation();
+    if (!item?.id) return;
 
-  cerrarEditar() {
-    this.modalEditarAbierto = false;
-    this.itemEditando = null;
-  }
-
-  eliminarCilindroDeEdicion(index: number) {
-    this.formEdicion.cilindros.splice(index, 1);
-  }
-
-  async agregarCilindroAEdicion() {
-    const serie = this.serieNuevaEdicion.trim();
-    if (!serie) return;
-
-    const { data, error } = await this.supabaseService.supabase
-      .from('cilindros')
-      .select('*')
-      .eq('numero_serie', serie)
-      .single();
-
-    if (error || !data) {
-      await this.mostrarAlerta('No encontrado', 'El cilindro ingresado no existe.');
-      return;
-    }
-
-    this.formEdicion.cilindros.push({
-      numero_serie: data.numero_serie,
-      tipo_gas: data.tipo_gas,
-      capacidad: `${data.litros || data.contenido || ''} ${data.unidad_medida || ''}`.trim()
-    });
-
-    this.serieNuevaEdicion = '';
-    this.cdRef.detectChanges();
-  }
-
-  async guardarEdicion() {
-    if (!this.itemEditando) return;
-
-    if (!this.formEdicion.cilindros || this.formEdicion.cilindros.length === 0) {
-      await this.mostrarAlerta('Atención', 'El registro debe tener al menos un cilindro.');
-      return;
-    }
-
-    this.guardandoEdicion = true;
-    this.cdRef.detectChanges();
-
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('salida_cilindros')
-        .update({
-          estado: this.formEdicion.estado,
-          almacen_destino_id: this.formEdicion.almacenDestinoId,
-          observacion: this.formEdicion.observacion ? this.formEdicion.observacion.trim() : null,
-          cilindros_egresados: this.formEdicion.cilindros
-        })
-        .eq('id', this.itemEditando.id);
-
-      if (error) throw error;
-
-      await this.mostrarToast('Registro actualizado correctamente.', 'success');
-      this.cerrarEditar();
-      await this.cargarHistorial();
-    } catch (err: any) {
-      console.error('Error al actualizar:', err);
-      await this.mostrarAlerta('Error', err.message || 'No se pudo actualizar el registro.');
-    } finally {
-      this.guardandoEdicion = false;
-      this.cdRef.detectChanges();
-    }
+    this.router.navigate(['/salida'], { queryParams: { editar: item.id } });
   }
 
   // --- Eliminar ---

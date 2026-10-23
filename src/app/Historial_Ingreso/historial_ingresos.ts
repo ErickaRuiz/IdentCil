@@ -1,6 +1,7 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { NavController, AlertController, ToastController } from '@ionic/angular';
 
@@ -18,12 +19,7 @@ import {
   IonCard,
   IonCardContent,
   IonModal,
-  IonSearchbar,
-  IonItem,
-  IonLabel,
-  IonSelect,
-  IonSelectOption,
-  IonInput
+  IonSearchbar
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -59,12 +55,7 @@ import { normalizarSerie } from '../services/cilindro-estado';
     IonCard,
     IonCardContent,
     IonModal,
-    IonSearchbar,
-    IonItem,
-    IonLabel,
-    IonSelect,
-    IonSelectOption,
-    IonInput
+    IonSearchbar
   ]
 })
 export class HistorialIngresosPage {
@@ -93,19 +84,13 @@ export class HistorialIngresosPage {
   modalDetalleAbierto: boolean = false;
   itemSeleccionado: any = null;
 
-  // --- Edición / Modal ---
-  modalEditarAbierto: boolean = false;
-  itemEditando: any = null;
-  formEdicion: any = { estado: '', almacenId: null, observacion: '', cilindros: [] };
-  serieNuevaEdicion: string = '';
-  guardandoEdicion: boolean = false;
-
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
     private alertController: AlertController,
     private toastCtrl: ToastController,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private router: Router
   ) {
     addIcons({arrowBackOutline,documentTextOutline,searchOutline,createOutline,trashOutline,addCircleOutline,checkmarkDoneOutline,timeOutline});
   }
@@ -380,88 +365,12 @@ export class HistorialIngresosPage {
     this.itemSeleccionado = null;
   }
 
-  // --- Editar ---
-  abrirEditar(item: any, event: Event) {
-    event.stopPropagation();
-    this.itemEditando = item;
-    this.formEdicion = {
-      estado: item.estado || item.motivo || 'VACIO',
-      almacenId: item.almacen_id || null,
-      observacion: item.observacion || item.observaciones || '',
-      cilindros: (item.cilindros_ingresados || []).map((c: any) => ({ ...c }))
-    };
-    this.serieNuevaEdicion = '';
-    this.modalEditarAbierto = true;
-  }
+  // --- Editar: abre el formulario completo de Ingreso con este registro cargado ---
+  abrirEditar(item: any, event?: Event) {
+    event?.stopPropagation();
+    if (!item?.id) return;
 
-  cerrarEditar() {
-    this.modalEditarAbierto = false;
-    this.itemEditando = null;
-  }
-
-  eliminarCilindroDeEdicion(index: number) {
-    this.formEdicion.cilindros.splice(index, 1);
-  }
-
-  async agregarCilindroAEdicion() {
-    const serie = this.serieNuevaEdicion.trim();
-    if (!serie) return;
-
-    const { data, error } = await this.supabaseService.supabase
-      .from('cilindros')
-      .select('*')
-      .eq('numero_serie', serie)
-      .single();
-
-    if (error || !data) {
-      await this.mostrarAlerta('No encontrado', 'El cilindro ingresado no existe.');
-      return;
-    }
-
-    this.formEdicion.cilindros.push({
-      numero_serie: data.numero_serie,
-      tipo_gas: data.tipo_gas,
-      capacidad: `${data.litros || data.contenido || ''} ${data.unidad_medida || ''}`.trim()
-    });
-
-    this.serieNuevaEdicion = '';
-    this.cdRef.detectChanges();
-  }
-
-  async guardarEdicion() {
-    if (!this.itemEditando) return;
-
-    if (!this.formEdicion.cilindros || this.formEdicion.cilindros.length === 0) {
-      await this.mostrarAlerta('Atención', 'El registro debe tener al menos un cilindro.');
-      return;
-    }
-
-    this.guardandoEdicion = true;
-    this.cdRef.detectChanges();
-
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('ingreso_cilindros')
-        .update({
-          estado: this.formEdicion.estado,
-          almacen_id: this.formEdicion.almacenId,
-          observacion: this.formEdicion.observacion ? this.formEdicion.observacion.trim() : null,
-          cilindros_ingresados: this.formEdicion.cilindros
-        })
-        .eq('id', this.itemEditando.id);
-
-      if (error) throw error;
-
-      await this.mostrarToast('Registro actualizado correctamente.', 'success');
-      this.cerrarEditar();
-      await this.cargarHistorial();
-    } catch (err: any) {
-      console.error('Error al actualizar:', err);
-      await this.mostrarAlerta('Error', err.message || 'No se pudo actualizar el registro.');
-    } finally {
-      this.guardandoEdicion = false;
-      this.cdRef.detectChanges();
-    }
+    this.router.navigate(['/ingreso'], { queryParams: { editar: item.id } });
   }
 
   // --- Eliminar ---

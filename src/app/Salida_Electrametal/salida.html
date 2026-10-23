@@ -5,12 +5,12 @@
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>Salida de Cilindros</ion-title>
+    <ion-title>{{ modoEdicion ? 'Editar Salida' : 'Salida de Cilindros' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding bg-light">
-  <ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialSalidas()">
+  <ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialSalidas()" *ngIf="!modoEdicion">
     <ion-icon name="time-outline" slot="start"></ion-icon>
     Historial de Salidas
   </ion-button>
@@ -54,6 +54,9 @@
             <div class="selector-title">Destino: Persona / Empresa que lo llevará</div>
             <div class="selector-value">
               {{ obtenerNombreEntidadSeleccionada() || 'Toca para buscar receptor...' }}
+            </div>
+            <div class="selector-direccion" *ngIf="entidadSeleccionadaId">
+              📍 {{ obtenerDireccionEntidadSeleccionada() || 'Sin dirección registrada' }}
             </div>
           </div>
           <div class="search-icon-badge">
@@ -112,6 +115,9 @@
                       style="display: inline-block; background: #fde8ec; color: #e11d48; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">
                       {{ ent.ruc || ent.dni || ent.num_documento || ent.numero_documento }}
                     </div>
+                    <div *ngIf="ent.direccion" style="font-size: 0.72rem; color: #64748b; margin-top: 6px; line-height: 1.3;">
+                      📍 {{ ent.direccion }}
+                    </div>
                   </div>
 
                   <ion-icon name="chevron-forward-outline" style="color: #cbd5e1; font-size: 1.1rem;"></ion-icon>
@@ -157,7 +163,7 @@
         <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
         <span *ngIf="!cargando">
           <ion-icon name="exit-outline" slot="start"></ion-icon>
-          Registrar Salida ({{ listaCilindros.length }})
+          {{ modoEdicion ? 'Guardar Cambios' : 'Registrar Salida' }} ({{ listaCilindros.length }})
         </span>
       </ion-button>
     </ion-card-content>
@@ -223,6 +229,10 @@
             }}</span>
         </div>
         <div class="dest-tag">
+          <ion-icon name="location-sharp"></ion-icon>
+          <span><strong>Dirección:</strong> {{ obtenerDireccionEntidadSeleccionada() || (entidadSeleccionadaId ? 'Sin dirección registrada' : 'Seleccione un destino arriba') }}</span>
+        </div>
+        <div class="dest-tag">
           <ion-icon name="business-outline"></ion-icon>
           <span><strong>Almacén destino:</strong> {{ obtenerNombreAlmacenDestino() || 'Sin transferencia (sale de
             planta)' }}</span>
@@ -276,6 +286,11 @@
             <span class="label-route">Para:</span>
             <span class="val-dest">{{ item.destinoEntidadNombre || obtenerNombreEntidadSeleccionada() || 'Destino'
               }}</span>
+          </div>
+          <div class="route-line" *ngIf="item.destinoDireccion || obtenerDireccionEntidadSeleccionada()">
+            <ion-icon name="location-sharp" class="icon-store"></ion-icon>
+            <span class="label-route">Dirección:</span>
+            <span class="val-dest">{{ item.destinoDireccion || obtenerDireccionEntidadSeleccionada() }}</span>
           </div>
           <div class="route-line" *ngIf="item.destinoAlmacenNombre">
             <ion-icon name="storefront-outline" class="icon-store"></ion-icon>

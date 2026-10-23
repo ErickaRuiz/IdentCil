@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { NavController, ToastController, AlertController } from '@ionic/angular';
 import { SupabaseService } from '../services/supabase';
 import { normalizarSerie, obtenerEstado, cargarEstados, estaDentro, haSalido, EstadoCilindro } from '../services/cilindro-estado';
@@ -93,6 +93,13 @@ export class IngresoPage implements OnInit {
   tipoGasSeleccionado: string = '';
   marcaSeleccionada: string = '';
   capacidadSeleccionada: string = '';
+
+  // --- Modo edición: se llega desde el Historial con ?editar=<id> ---
+  modoEdicion: boolean = false;
+  ingresoEditandoId: any = null;
+  // Series que ya pertenecían a este registro antes de editarlo (no cuentan como duplicadas)
+  private seriesOriginalesEdicion: Set<string> = new Set();
+
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
@@ -100,6 +107,7 @@ export class IngresoPage implements OnInit {
     private cdRef: ChangeDetectorRef,
     private alertController: AlertController,
     private router: Router,
+    private route: ActivatedRoute,
     private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({ arrowBackOutline, timeOutline, searchOutline, chevronForwardOutline, cameraOutline, checkmarkDoneOutline, addCircleOutline, trashOutline, closeCircleOutline, flaskOutline, qrCodeOutline, checkmarkOutline });
@@ -120,6 +128,74 @@ export class IngresoPage implements OnInit {
       this.cargarAlmacenes(),
       this.cargarEntidades()
     ]);
+
+    // Si vienes del Historial con "Editar", se carga ese registro en este mismo formulario
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('editar');
+      if (id) {
+        this.cargarIngresoParaEdicion(id);
+      }
+    });
+  }
+
+  /**
+   * Carga un ingreso ya guardado en el formulario completo (propiedad, empresa/cliente,
+   * estado, almacén, observación y lista de cilindros) para poder modificarlo.
+   */
+  async cargarIngresoParaEdicion(id: string) {
+    this.cargando = true;
+    this.cdRef.detectChanges();
+
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('ingreso_cilindros')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        throw error || new Error('No se encontró el registro.');
+      }
+
+      this.modoEdicion = true;
+      this.ingresoEditandoId = data.id;
+
+      // Propiedad primero: al cambiarla se recarga la lista de empresas/clientes
+      this.propiedad = data.propiedad || 'ELECTRAMETAL';
+      await this.onPropiedadChange();
+      this.entidadSeleccionadaId = data.cliente_id ?? null;
+
+      this.estado = data.estado || 'VACIO';
+      this.almacenId = data.almacen_id ?? this.almacenId;
+      this.observacion = data.observacion || '';
+
+      const cilindros = Array.isArray(data.cilindros_ingresados) ? data.cilindros_ingresados : [];
+      this.listaCilindros = cilindros
+        .map((c: any) => ({
+          numeroSerie: c.numero_serie || c.numeroSerie || c.serie || '',
+          tipoGas: c.tipo_gas || c.tipoGas || '',
+          capacidad: c.capacidad || '',
+          registrado: true,
+          metodoIdentificacion: c.metodo_identificacion || 'manual',
+          ia: c.ia || null
+        }))
+        .filter((c: any) => c.numeroSerie);
+
+      this.seriesOriginalesEdicion = new Set(
+        this.listaCilindros.map((c: any) => normalizarSerie(c.numeroSerie))
+      );
+
+      this.cilindroEncontrado = null;
+      this.serieActual = '';
+    } catch (err: any) {
+      console.error('Error al cargar el ingreso para editar:', err);
+      await this.mostrarAlerta('Error', err?.message || 'No se pudo cargar el registro para editar.');
+      this.modoEdicion = false;
+      this.ingresoEditandoId = null;
+    } finally {
+      this.cargando = false;
+      this.cdRef.detectChanges();
+    }
   }
 
   regresar() {
@@ -138,8 +214,8 @@ export class IngresoPage implements OnInit {
       } else {
         this.listaAlmacenes = data || [];
 
-        // Opcional: Seleccionar el primer almacén por defecto
-        if (this.listaAlmacenes.length > 0) {
+        // Opcional: Seleccionar el primer almacén por defecto (no al editar un registro)
+        if (this.listaAlmacenes.length > 0 && !this.modoEdicion) {
           this.almacenId = this.listaAlmacenes[0].id;
         }
       }
@@ -283,7 +359,7 @@ export class IngresoPage implements OnInit {
       return;
     }
 
-    if (estaDentro(estado)) {
+    if (estaDentro(estado) && !this.seriesOriginalesEdicion.has(serieLimpia)) {
       const almacenActual = this.listaAlmacenes.find(a => a.id === estado.almacenId)?.nombre;
       await this.mostrarAlerta(
         'Cilindro ya ingresado',
@@ -302,11 +378,10 @@ export class IngresoPage implements OnInit {
     }
 
     // 3. Datos reales del cilindro desde el inventario (si existe)
-    const { data: cilindro } = await this.supabaseService.supabase
-      .from('cilindros')
-      .select('*')
-      .eq('numero_serie', serieLimpia)
-      .maybeSingle();
+    //    Se busca sin distinguir mayúsculas/minúsculas (igual que Registro de
+    //    Cilindros): si la serie se registró como "6665889y" y aquí se lee como
+    //    "6665889Y", antes no la encontraba y mostraba datos vacíos.
+    const cilindro = await this.buscarCilindroEnInventario(serieLimpia, this.serieActual);
 
     if (!cilindro && !haSalido(estado)) {
       this.mostrarToast(
@@ -317,23 +392,60 @@ export class IngresoPage implements OnInit {
 
     this.cilindroEncontrado = cilindro
       ? {
-          numero_serie: serieLimpia,
+          // Se muestra la serie tal como quedó registrada en el inventario
+          numero_serie: cilindro.numero_serie || serieLimpia,
           tipo_gas: cilindro.tipo_gas || 'SIN REGISTRAR',
           marca: cilindro.marca || 'N/A',
-          litros: cilindro.litros || cilindro.contenido || 'N/A',
-          unidad_medida: cilindro.unidad_medida || '',
+          capacidad_texto: this.textoCapacidad(cilindro),
+          litros_texto: cilindro.litros ? `${cilindro.litros} L` : '',
           registrado: true
         }
       : {
           numero_serie: serieLimpia,
           tipo_gas: 'OXÍGENO',
           marca: 'N/A',
-          litros: 'N/A',
-          unidad_medida: 'L',
+          capacidad_texto: '',
+          litros_texto: '',
           registrado: false
         };
 
     this.cdRef.detectChanges();
+  }
+
+  private escaparIlike(texto: string): string {
+    return texto.replace(/[\\%_]/g, m => '\\' + m);
+  }
+
+  // Busca el cilindro en el inventario sin distinguir mayúsculas. Prueba primero la
+  // serie normalizada y, si no aparece, lo que se escribió/escaneó tal cual.
+  private async buscarCilindroEnInventario(...candidatos: string[]): Promise<any | null> {
+    const probados = new Set<string>();
+
+    for (const candidato of candidatos) {
+      const texto = (candidato || '').trim();
+      if (!texto || probados.has(texto.toLowerCase())) continue;
+      probados.add(texto.toLowerCase());
+
+      const { data } = await this.supabaseService.supabase
+        .from('cilindros')
+        .select('*')
+        .ilike('numero_serie', this.escaparIlike(texto))
+        .limit(1)
+        .maybeSingle();
+
+      if (data) return data;
+    }
+
+    return null;
+  }
+
+  // Capacidad tal como se registra en Registro de Cilindros:
+  // acetileno -> contenido en kg; demás gases -> contenido con su unidad (M3 / KG).
+  private textoCapacidad(c: any): string {
+    if (!c?.contenido) return '';
+    const esAcetileno = String(c.tipo_gas || '').toUpperCase() === 'ACETILENO';
+    const unidad = esAcetileno ? 'kg' : (c.unidad_medida || '');
+    return `${c.contenido} ${unidad}`.trim();
   }
 
   agregarCilindroALista() {
@@ -351,7 +463,7 @@ export class IngresoPage implements OnInit {
     this.listaCilindros.push({
       numeroSerie: serie,
       tipoGas: this.cilindroEncontrado.tipo_gas,
-      capacidad: `${this.cilindroEncontrado.litros || ''} ${this.cilindroEncontrado.unidad_medida || ''}`.trim(),
+      capacidad: this.cilindroEncontrado.capacidad_texto || this.cilindroEncontrado.litros_texto || '',
       registrado: !!this.cilindroEncontrado.registrado,
       metodoIdentificacion: this.metodoIdentificacion,
       ia: this.trazaIAActual
@@ -447,7 +559,7 @@ export class IngresoPage implements OnInit {
       // 4. Verificación final anti-duplicados: ninguno debe estar ya DENTRO
       //    (por ejemplo, si otro dispositivo lo ingresó mientras se armaba la lista).
       const estados = await cargarEstados(this.supabaseService.supabase);
-      const yaDentro = series.filter(s => estaDentro(estados.get(s)));
+      const yaDentro = series.filter(s => estaDentro(estados.get(s)) && !this.seriesOriginalesEdicion.has(s));
 
       if (yaDentro.length > 0) {
         this.cargando = false;
@@ -485,17 +597,36 @@ export class IngresoPage implements OnInit {
         usuario_id: usuarioId
       };
 
-      // 7. Registrar el movimiento de ingreso. Con este registro el cilindro
-      //    pasa a estar DENTRO: el estado se calcula desde el historial, no
-      //    hace falta actualizar la tabla `cilindros`.
-      const { error } = await this.supabaseService.supabase
-        .from('ingreso_cilindros')
-        .insert([datosIngreso]);
+      if (this.modoEdicion && this.ingresoEditandoId) {
+        // 7a. Edición: se actualiza el mismo registro (se conserva el usuario que lo creó)
+        const datosActualizar: any = { ...datosIngreso };
+        delete datosActualizar.usuario_id;
 
-      if (error) throw error;
+        const { error } = await this.supabaseService.supabase
+          .from('ingreso_cilindros')
+          .update(datosActualizar)
+          .eq('id', this.ingresoEditandoId);
 
-      await this.mostrarAlerta('¡Éxito!', 'El ingreso de cilindros se ha registrado correctamente.');
-      this.limpiarFormulario();
+        if (error) throw error;
+
+        await this.mostrarAlerta('¡Éxito!', 'El ingreso se ha actualizado correctamente.');
+        this.modoEdicion = false;
+        this.ingresoEditandoId = null;
+        this.seriesOriginalesEdicion = new Set();
+        this.navCtrl.back();
+      } else {
+        // 7b. Registrar el movimiento de ingreso. Con este registro el cilindro
+        //     pasa a estar DENTRO: el estado se calcula desde el historial, no
+        //     hace falta actualizar la tabla `cilindros`.
+        const { error } = await this.supabaseService.supabase
+          .from('ingreso_cilindros')
+          .insert([datosIngreso]);
+
+        if (error) throw error;
+
+        await this.mostrarAlerta('¡Éxito!', 'El ingreso de cilindros se ha registrado correctamente.');
+        this.limpiarFormulario();
+      }
 
     } catch (err: any) {
       console.error('Error al guardar en Supabase:', err);

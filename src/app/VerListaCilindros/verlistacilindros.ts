@@ -27,7 +27,8 @@ import {
   documentTextOutline,
   alertCircleOutline,
   timeOutline,
-  checkmarkCircleOutline
+  checkmarkCircleOutline,
+  cubeOutline
 } from 'ionicons/icons';
 
 // Librerías de código de barras y PDF
@@ -82,7 +83,8 @@ export class VerListaCilindrosPage implements OnInit {
       documentTextOutline,
       alertCircleOutline,
       timeOutline,
-      checkmarkCircleOutline
+      checkmarkCircleOutline,
+      cubeOutline
     });
   }
 

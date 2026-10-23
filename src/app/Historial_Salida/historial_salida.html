@@ -51,6 +51,9 @@
         <!-- Datos Generales -->
         <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.8rem; color: #475569;">
           <span class="origen-line">📦 <strong>Salió de:</strong> {{ obtenerNombreAlmacen(item) }}</span>
+          <span *ngIf="obtenerDireccionEntidad(item)" class="origen-line">
+            📍 <strong>Dirección:</strong> {{ obtenerDireccionEntidad(item) }}
+          </span>
           <span *ngIf="obtenerNombreAlmacenDestino(item)" class="origen-line">
             🏭 <strong>Transferido a:</strong> {{ obtenerNombreAlmacenDestino(item) }}
           </span>
@@ -77,6 +80,9 @@
         <div class="acciones-row" (click)="$event.stopPropagation()">
           <button class="accion-btn editar" (click)="abrirEditar(item, $event)">
             <ion-icon name="create-outline"></ion-icon> Editar
+          </button>
+          <button class="accion-btn pdf" (click)="descargarComprobante(item, $event)">
+            <ion-icon name="download-outline"></ion-icon> Comprobante PDF
           </button>
           <button class="accion-btn eliminar" (click)="confirmarEliminar(item, $event)">
             <ion-icon name="trash-outline"></ion-icon> Eliminar
@@ -116,6 +122,12 @@
           Doc: {{ obtenerDocumentoEntidad(itemSeleccionado) }}
         </p>
 
+        <!-- Dirección del cliente / empresa según su registro -->
+        <div class="origen-box" *ngIf="obtenerDireccionEntidad(itemSeleccionado)" style="margin-bottom: 10px;">
+          <div class="origen-box-label">DIRECCIÓN DEL CLIENTE / EMPRESA</div>
+          <div class="origen-box-value">📍 {{ obtenerDireccionEntidad(itemSeleccionado) }}</div>
+        </div>
+
         <!-- Origen destacado -->
         <div class="origen-box">
           <div class="origen-box-label">SALIÓ DEL ALMACÉN</div>
@@ -145,96 +157,14 @@
           📝 {{ itemSeleccionado.observacion }}
         </p>
 
-        <ion-button expand="block" fill="outline" color="medium" style="margin-top: 18px;" (click)="cerrarDetalle(); abrirEditar(itemSeleccionado, $event)">
-          <ion-icon name="create-outline" slot="start"></ion-icon>
-          Editar este registro
+        <ion-button expand="block" color="danger" style="margin-top: 18px;" (click)="descargarComprobante(itemSeleccionado)">
+          <ion-icon name="download-outline" slot="start"></ion-icon>
+          Descargar comprobante de entrega (PDF)
         </ion-button>
 
-      </ion-content>
-    </ng-template>
-  </ion-modal>
-
-  <!-- Modal de Edición del Registro -->
-  <ion-modal [isOpen]="modalEditarAbierto" (didDismiss)="cerrarEditar()">
-    <ng-template>
-      <ion-header class="ion-no-border">
-        <ion-toolbar style="--background: #e11d48; --color: #ffffff;">
-          <ion-title style="font-weight: 800; font-size: 1.05rem;">Editar Salida</ion-title>
-          <ion-buttons slot="end">
-            <ion-button (click)="cerrarEditar()" style="--color: #ffffff; font-weight: 700;">
-              Cerrar
-            </ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-
-      <ion-content class="ion-padding" style="--background: #f8fafc;" *ngIf="itemEditando">
-
-        <p class="detalle-doc" style="margin-bottom: 12px;">
-          🚚 {{ obtenerNombreEntidad(itemEditando) }}
-        </p>
-
-        <ion-item fill="outline" style="margin-bottom: 10px; --border-radius: 10px;">
-          <ion-label position="stacked">Estado</ion-label>
-          <ion-select [(ngModel)]="formEdicion.estado" interface="popover">
-            <ion-select-option value="LLENO">LLENO</ion-select-option>
-            <ion-select-option value="VACIO">VACIO</ion-select-option>
-            <ion-select-option value="P.H.">Prueba Hidrostática (P.H.)</ion-select-option>
-            <ion-select-option value="CAMBIO_VALVULA">Cambio de Válvula</ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <ion-item fill="outline" style="margin-bottom: 10px; --border-radius: 10px;">
-          <ion-label position="stacked">Almacén Destino (si aplica)</ion-label>
-          <ion-select [(ngModel)]="formEdicion.almacenDestinoId" interface="popover" placeholder="Sin transferencia de almacén">
-            <ion-select-option *ngFor="let alm of listaAlmacenes" [value]="alm.id">
-              {{ alm.nombre }}
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <ion-item fill="outline" style="margin-bottom: 14px; --border-radius: 10px;">
-          <ion-label position="stacked">Observación</ion-label>
-          <ion-input [(ngModel)]="formEdicion.observacion" placeholder="Ej: ..."></ion-input>
-        </ion-item>
-
-        <!-- Agregar cilindro nuevo -->
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <ion-input fill="outline" [(ngModel)]="serieNuevaEdicion" placeholder="Agregar N° de serie"
-            (keyup.enter)="agregarCilindroAEdicion()" style="flex: 1;"></ion-input>
-          <ion-button color="danger" (click)="agregarCilindroAEdicion()">
-            <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
-          </ion-button>
-        </div>
-
-        <!-- Lista de cilindros editable -->
-        <div class="cilindros-box">
-          <div class="cilindros-box-header">
-            CILINDROS EN ESTE REGISTRO ({{ formEdicion.cilindros?.length || 0 }}):
-          </div>
-          <div *ngFor="let cil of formEdicion.cilindros; let i = index"
-            style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
-            <span class="cilindro-row" style="margin: 0;">
-              • Serie: <strong style="color: #0f172a;">{{ cil.numero_serie }}</strong>
-              <span *ngIf="cil.tipo_gas"> | {{ cil.tipo_gas }}</span>
-              <span *ngIf="cil.capacidad"> ({{ cil.capacidad }})</span>
-            </span>
-            <ion-button fill="clear" color="danger" size="small" (click)="eliminarCilindroDeEdicion(i)">
-              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-            </ion-button>
-          </div>
-          <div *ngIf="!formEdicion.cilindros || formEdicion.cilindros.length === 0"
-            style="text-align: center; color: #94a3b8; font-size: 0.8rem; padding: 10px 0;">
-            Sin cilindros. Agrega al menos uno.
-          </div>
-        </div>
-
-        <ion-button expand="block" color="danger" class="ion-margin-top" (click)="guardarEdicion()" [disabled]="guardandoEdicion">
-          <ion-spinner *ngIf="guardandoEdicion" name="crescent"></ion-spinner>
-          <span *ngIf="!guardandoEdicion">
-            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
-            Guardar Cambios
-          </span>
+        <ion-button expand="block" fill="outline" color="medium" style="margin-top: 10px;" (click)="abrirEditar(itemSeleccionado, $event); cerrarDetalle()">
+          <ion-icon name="create-outline" slot="start"></ion-icon>
+          Editar este registro
         </ion-button>
 
       </ion-content>

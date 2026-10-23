@@ -31,7 +31,9 @@ import {
   ToastController
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
+import { jsPDF } from 'jspdf';
 import {
+  downloadOutline,
   searchOutline,
   alertCircleOutline,
   checkmarkCircleOutline,
@@ -131,6 +133,7 @@ export class RecojoComponent {
     private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({
+      downloadOutline,
       searchOutline,
       alertCircleOutline,
       checkmarkCircleOutline,
@@ -537,8 +540,12 @@ export class RecojoComponent {
     this.cdRef.detectChanges();
 
     const serie = this.recojo.codigo_qr.trim();
+    const fechaRecojo = new Date();
 
     try {
+      // Foto de los datos para el comprobante (antes de limpiar el formulario)
+      const comprobante = await this.armarComprobante(fechaRecojo);
+
       // RE-VERIFICACIÓN: alguien más pudo haberlo recogido desde otro celular
       // mientras tenías este formulario abierto (evita recojos duplicados).
       const estadoActual = await obtenerEstado(this.supabase.supabase, serie);
@@ -566,7 +573,7 @@ export class RecojoComponent {
             motivo: this.recojo.motivo,
             observaciones: this.recojo.observaciones,
             almacen_destino_id: this.almacenDestinoId,
-            fecha_recojo: new Date().toISOString()
+            fecha_recojo: fechaRecojo.toISOString()
           }
         ]);
 
@@ -581,7 +588,7 @@ export class RecojoComponent {
       this.mostrarToast(`Recojo registrado. Cilindro de vuelta en ${nombreAlmacen}, a nombre de ${this.razonSocial}.`, 'success');
 
       this.resetFormulario();
-      this.router.navigate(['/home']);
+      await this.ofrecerComprobante(comprobante);
 
     } catch (error: any) {
       console.error('Error al guardar el recojo:', error);
@@ -638,6 +645,225 @@ export class RecojoComponent {
     } catch (err) {
       console.error('Error inesperado al registrar el reingreso:', err);
     }
+  }
+
+  // ===== COMPROBANTE DE DEVOLUCIÓN EN PDF =====
+
+  /**
+   * Reúne todo lo que lleva el comprobante: datos del recojo, del cliente que
+   * devuelve (con su dirección, si se puede leer) y todas las características
+   * del cilindro. Se arma ANTES de limpiar el formulario.
+   */
+  private async armarComprobante(fechaRecojo: Date): Promise<any> {
+    const cil = this.cilindroEncontrado || {};
+    const est: EstadoCilindro | undefined = cil._est;
+
+    let cliente: any = { nombre: this.recojo.cliente, documento: '', direccion: '' };
+    if (est?.clienteId) {
+      try {
+        const { data } = await this.supabase.supabase
+          .from('clientes')
+          .select('nombre_razon_social, tipo_documento, num_documento, direccion')
+          .eq('id', est.clienteId)
+          .maybeSingle();
+        if (data) {
+          cliente = {
+            nombre: data.nombre_razon_social || this.recojo.cliente,
+            documento: `${data.tipo_documento || 'DOC'}: ${data.num_documento || '-'}`,
+            direccion: data.direccion || ''
+          };
+        }
+      } catch (err) {
+        console.warn('No se pudieron leer los datos del cliente para el comprobante:', err);
+      }
+    }
+
+    return {
+      fechaRecojo,
+      fechaSalida: cil.fecha_ultima_salida ? new Date(cil.fecha_ultima_salida) : null,
+      almacenOrigen: this.obtenerNombreAlmacenOrigen(),
+      almacenDestino: this.obtenerNombreAlmacenDestino(),
+      cliente,
+      estado: this.recojo.estado,
+      motivo: this.recojo.motivo,
+      observaciones: (this.recojo.observaciones || '').trim(),
+      cilindro: { ...cil, _est: undefined }
+    };
+  }
+
+  /** Tras guardar el recojo: ofrece bajar el comprobante antes de volver al inicio. */
+  private async ofrecerComprobante(comprobante: any) {
+    const alert = await this.alertController.create({
+      header: 'Recojo registrado',
+      message: `El cilindro ${comprobante?.cilindro?.numero_serie || ''} regresó a ${comprobante?.almacenDestino || 'el almacén'}. ¿Deseas el comprobante de devolución en PDF?`,
+      backdropDismiss: false,
+      buttons: [
+        {
+          text: 'Descargar comprobante PDF',
+          handler: () => {
+            this.descargarComprobante(comprobante);
+            return false; // deja el aviso abierto para poder cerrarlo después
+          }
+        },
+        {
+          text: 'Cerrar',
+          role: 'cancel',
+          handler: () => {
+            this.router.navigate(['/home']);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private fmtFecha(d: Date | null): string {
+    return d && !isNaN(d.getTime())
+      ? d.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+      : 'No registrada';
+  }
+
+  private fmtHora(d: Date | null): string {
+    return d && !isNaN(d.getTime())
+      ? d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : '';
+  }
+
+  descargarComprobante(c: any) {
+    if (!c) return;
+    const cil = c.cilindro || {};
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const M = 14;
+    const ANCHO = 210;
+    let y = M;
+
+    const asegurarEspacio = (alto: number) => {
+      if (y + alto > 280) {
+        doc.addPage();
+        y = M;
+      }
+    };
+
+    const p = (n: number) => String(n).padStart(2, '0');
+    const f: Date = c.fechaRecojo;
+    const numero = `RC-${f.getFullYear()}${p(f.getMonth() + 1)}${p(f.getDate())}-${p(f.getHours())}${p(f.getMinutes())}${p(f.getSeconds())}`;
+
+    // --- Encabezado ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text(this.razonSocial, M, y + 5);
+    doc.setFontSize(10);
+    doc.text(`N° ${numero}`, ANCHO - M, y + 5, { align: 'right' });
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`RUC: ${this.rucProveedor}`, M, y);
+    y += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('COMPROBANTE DE DEVOLUCIÓN DE CILINDRO', M, y);
+    y += 3;
+    doc.setDrawColor(13, 148, 136);
+    doc.setLineWidth(0.6);
+    doc.line(M, y, ANCHO - M, y);
+    y += 8;
+
+    const seccion = (titulo: string) => {
+      asegurarEspacio(14);
+      doc.setFillColor(204, 251, 241);
+      doc.rect(M, y - 4.5, ANCHO - M * 2, 7, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text(titulo, M + 2, y);
+      y += 7;
+    };
+
+    const fila = (etiqueta: string, valor: string) => {
+      const lineas: string[] = doc.splitTextToSize(valor || '-', ANCHO - M * 2 - 48);
+      asegurarEspacio(lineas.length * 5 + 2);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text(`${etiqueta}:`, M + 2, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(lineas, M + 50, y);
+      y += lineas.length * 5 + 1;
+    };
+
+    // --- Datos del recojo ---
+    seccion('DATOS DEL RECOJO');
+    fila('Fecha de recojo', this.fmtFecha(c.fechaRecojo));
+    fila('Hora de recojo', this.fmtHora(c.fechaRecojo));
+    fila('Motivo', c.motivo);
+    fila('Estado al recoger', c.estado);
+    fila('Regresó al almacén', c.almacenDestino || '-');
+    fila('Recibido a nombre de', this.razonSocial);
+    y += 3;
+
+    // --- Cliente que devuelve ---
+    seccion('CLIENTE QUE DEVUELVE');
+    fila('Cliente / Empresa', String(c.cliente?.nombre || '-').toUpperCase());
+    if (c.cliente?.documento) fila('Documento', c.cliente.documento);
+    fila('Dirección / Ubicación', c.cliente?.direccion || 'No registrada');
+    y += 3;
+
+    // --- Recorrido del cilindro ---
+    seccion('RECORRIDO DEL CILINDRO');
+    fila('Salió el', c.fechaSalida ? `${this.fmtFecha(c.fechaSalida)} · ${this.fmtHora(c.fechaSalida)}` : 'No registrada');
+    fila('Salió del almacén', c.almacenOrigen || 'No especificado');
+    fila('Devuelto el', `${this.fmtFecha(c.fechaRecojo)} · ${this.fmtHora(c.fechaRecojo)}`);
+    if (c.fechaSalida && !isNaN(c.fechaSalida.getTime())) {
+      const dias = Math.max(0, Math.floor((c.fechaRecojo.getTime() - c.fechaSalida.getTime()) / 86400000));
+      fila('Tiempo fuera', `${dias} día(s)`);
+    }
+    y += 3;
+
+    // --- Características del cilindro ---
+    seccion('CARACTERÍSTICAS DEL CILINDRO');
+    const capacidad = [
+      cil.litros ? `${cil.litros} L` : '',
+      cil.contenido ? `${cil.contenido} ${cil.tipo_gas === 'ACETILENO' ? 'kg' : (cil.unidad_medida || '')}`.trim() : ''
+    ].filter(t => t).join(' · ') || '-';
+
+    fila('N° de serie', String(cil.numero_serie || '-'));
+    fila('Tipo de gas', String(cil.tipo_gas || '-').toUpperCase());
+    fila('Marca', cil.marca || '-');
+    fila('Año de fabricación', cil.anio_fabricacion || '-');
+    fila('Capacidad', capacidad);
+    fila('Unidad de medida', cil.unidad_medida || '-');
+    fila('Peso', cil.peso ? `${cil.peso} kg` : '-');
+    fila('Diámetro', cil.ancho_diametro ? `${cil.ancho_diametro} cm` : '-');
+    fila('Altura', cil.largo_altura ? `${cil.largo_altura} cm` : '-');
+    fila('Color', cil.color || '-');
+    fila('Prueba hidrostática (PH)', cil.ph || '-');
+    fila('Procedencia', cil.procedencia || '-');
+
+    // --- Observaciones ---
+    if (c.observaciones) {
+      y += 3;
+      seccion('OBSERVACIONES');
+      fila('Detalle', c.observaciones);
+    }
+
+    // --- Firmas ---
+    asegurarEspacio(40);
+    y += 22;
+    doc.setDrawColor(100, 116, 139);
+    doc.setLineWidth(0.3);
+    doc.line(M + 6, y, M + 78, y);
+    doc.line(ANCHO - M - 78, y, ANCHO - M - 6, y);
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('ENTREGADO POR (CLIENTE)', M + 42, y, { align: 'center' });
+    doc.text('RECIBIDO POR', ANCHO - M - 42, y, { align: 'center' });
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Nombre, DNI y firma', M + 42, y, { align: 'center' });
+    doc.text(this.razonSocial, ANCHO - M - 42, y, { align: 'center' });
+
+    const nombre = String(cil.numero_serie || 'cilindro').replace(/[^a-zA-Z0-9_-]/g, '_');
+    doc.save(`comprobante_devolucion_${nombre}.pdf`);
   }
 
   resetFormulario() {

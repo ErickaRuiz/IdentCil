@@ -5,13 +5,13 @@
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>Ingreso de Cilindros</ion-title>
+    <ion-title>{{ modoEdicion ? 'Editar Ingreso' : 'Ingreso de Cilindros' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 
 <ion-content class="ion-padding bg-light">
-<ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialIngresos()">
+<ion-button expand="block" class="btn-historial-oscuro" (click)="irAHistorialIngresos()" *ngIf="!modoEdicion">
     <ion-icon name="time-outline" slot="start"></ion-icon>
     Historial de Ingresos
   </ion-button>
@@ -207,7 +207,7 @@
         <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
         <span *ngIf="!cargando">
           <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
-          Guardar Ingreso ({{ listaCilindros.length }})
+          {{ modoEdicion ? 'Guardar Cambios' : 'Guardar Ingreso' }} ({{ listaCilindros.length }})
         </span>
       </ion-button>
     </ion-card-content>
@@ -220,8 +220,9 @@
       <div class="info-grid">
         <p><strong>Gas:</strong> <span>{{ cilindroEncontrado.tipo_gas }}</span></p>
         <p><strong>Marca:</strong> <span>{{ cilindroEncontrado.marca || 'N/A' }}</span></p>
-        <p><strong>Capacidad / Litros:</strong> <span>{{ cilindroEncontrado.litros || cilindroEncontrado.contenido ||
-            'N/A' }} {{ cilindroEncontrado.unidad_medida }}</span></p>
+        <p><strong>Capacidad:</strong> <span>{{ cilindroEncontrado.capacidad_texto || 'N/A' }}</span></p>
+        <p *ngIf="cilindroEncontrado.tipo_gas !== 'ACETILENO'"><strong>Litros:</strong> <span>{{ cilindroEncontrado.litros_texto || 'N/A' }}</span></p>
+        <p class="aviso-no-registrado" *ngIf="!cilindroEncontrado.registrado">Esta serie no está registrada en el inventario.</p>
       </div>
 
       <!-- Botón para pasar de la vista previa a la lista -->

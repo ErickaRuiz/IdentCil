@@ -34,6 +34,44 @@ ion-searchbar {
   padding: 0;
 }
 
+/* Contador de cilindros registrados */
+.contador-cilindros {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #f0fdf4, #e6f7ef);
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+  box-shadow: 0 2px 6px rgba(0, 168, 89, 0.08);
+
+  .contador-icono {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #00A859;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .contador-texto {
+    font-size: 0.88rem;
+    color: #166534;
+    font-weight: 600;
+
+    strong {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #00A859;
+    }
+  }
+}
+
 /* Mensaje sin resultados */
 .empty-state {
   text-align: center;

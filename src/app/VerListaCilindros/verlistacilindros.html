@@ -18,6 +18,18 @@
 
 <ion-content class="main-content">
 
+  <!-- CONTADOR DE CILINDROS REGISTRADOS -->
+  <div class="contador-cilindros" *ngIf="listaCilindros.length > 0">
+    <div class="contador-icono">
+      <ion-icon name="cube-outline"></ion-icon>
+    </div>
+    <div class="contador-texto">
+      <strong>{{ cilindrosFiltrados.length }}</strong>
+      <span *ngIf="!filtroCilindro"> cilindro{{ listaCilindros.length === 1 ? '' : 's' }} registrado{{ listaCilindros.length === 1 ? '' : 's' }}</span>
+      <span *ngIf="filtroCilindro"> de {{ listaCilindros.length }} cilindros</span>
+    </div>
+  </div>
+
   <!-- MENSAJE SI NO HAY RESULTADOS -->
   <div *ngIf="cilindrosFiltrados.length === 0" class="empty-state">
     <ion-icon name="search-outline"></ion-icon>

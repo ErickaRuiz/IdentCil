@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { NavController, ToastController, AlertController } from '@ionic/angular';
 import { SupabaseService } from '../services/supabase';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -123,6 +123,14 @@ export class SalidaPage implements OnInit {
 
   private searchTimeout: any;
 
+  // --- Modo edición: se llega desde el Historial de Salidas con ?editar=<id> ---
+  modoEdicion: boolean = false;
+  salidaEditandoId: any = null;
+  // Series que ya pertenecían a esta salida antes de editarla (no cuentan como "ya salió")
+  private seriesOriginalesEdicion: Set<string> = new Set();
+  // Almacén de origen original de cada serie de la salida que se edita
+  private origenOriginalPorSerie: Map<string, { almacenId: number | null; nombre: string }> = new Map();
+
   constructor(
     private supabaseService: SupabaseService,
     private navCtrl: NavController,
@@ -130,6 +138,7 @@ export class SalidaPage implements OnInit {
     private cdRef: ChangeDetectorRef,
     private alertController: AlertController,
     private router: Router,
+    private route: ActivatedRoute,
     private identificacionFoto: IdentificacionFotoService
   ) {
     addIcons({ arrowBackOutline, timeOutline, searchOutline, cameraOutline, chevronForwardOutline, exitOutline, businessOutline, personOutline, calendarOutline, saveOutline, personAddOutline, addCircleOutline, trashOutline, arrowForwardOutline, storefrontOutline, locationSharp, checkmarkDoneOutline, closeCircleOutline, flaskOutline, qrCodeOutline, checkmarkOutline });
@@ -141,6 +150,98 @@ export class SalidaPage implements OnInit {
       this.cargarAlmacenes(),
       this.cargarEntidades()
     ]);
+
+    // Si vienes del Historial con "Editar", se carga esa salida en este mismo formulario
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('editar');
+      if (id) {
+        this.cargarSalidaParaEdicion(id);
+      }
+    });
+  }
+
+  /**
+   * Carga una salida ya guardada en el formulario completo (cliente/destino,
+   * almacén destino, estado, observación y lista de cilindros) para modificarla.
+   */
+  async cargarSalidaParaEdicion(id: string) {
+    this.cargando = true;
+    this.cdRef.detectChanges();
+
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('salida_cilindros')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        throw error || new Error('No se encontró el registro.');
+      }
+
+      this.modoEdicion = true;
+      this.salidaEditandoId = data.id;
+
+      this.entidadSeleccionadaId = data.cliente_id ?? null;
+      this.estado = data.estado || 'LLENO';
+      this.almacenDestinoId = data.almacen_destino_id ?? null;
+      this.observacion = data.observacion || '';
+      this.almacenId = data.almacen_id ?? null;
+
+      const nombreDestinoAlmacen = this.obtenerNombreAlmacenDestino();
+      const nombreEntidad = this.obtenerNombreEntidadSeleccionada();
+      const fechaSalida = data.created_at ? new Date(data.created_at) : new Date();
+
+      const cilindros = Array.isArray(data.cilindros_egresados) ? data.cilindros_egresados : [];
+      this.origenOriginalPorSerie = new Map();
+
+      this.listaCilindros = cilindros
+        .map((c: any) => {
+          const numeroSerie = c.numero_serie || c.numeroSerie || c.serie || '';
+          const origenAlmacenId = c.origen_almacen_id ?? data.almacen_id ?? null;
+          const origenNombre = c.origen_nombre
+            || (origenAlmacenId && this.mapaAlmacenes[origenAlmacenId] ? this.mapaAlmacenes[origenAlmacenId] : '');
+
+          if (numeroSerie) {
+            this.origenOriginalPorSerie.set(normalizarSerie(numeroSerie), {
+              almacenId: origenAlmacenId,
+              nombre: origenNombre
+            });
+          }
+
+          return {
+            numeroSerie,
+            tipoGas: c.tipo_gas || c.tipoGas || '',
+            capacidad: c.capacidad || '',
+            estado: data.estado || 'LLENO',
+            origenAlmacenId,
+            origenNombre,
+            destinoAlmacenId: data.almacen_destino_id ?? null,
+            destinoAlmacenNombre: nombreDestinoAlmacen,
+            destinoEntidadNombre: nombreEntidad,
+            destinoDireccion: this.obtenerDireccionEntidadSeleccionada(),
+            fechaSalida,
+            metodoIdentificacion: c.metodo_identificacion || 'manual',
+            ia: c.ia || null
+          };
+        })
+        .filter((c: any) => c.numeroSerie);
+
+      this.seriesOriginalesEdicion = new Set(
+        this.listaCilindros.map((c: any) => normalizarSerie(c.numeroSerie))
+      );
+
+      this.cilindroEncontrado = null;
+      this.serieActual = '';
+    } catch (err: any) {
+      console.error('Error al cargar la salida para editar:', err);
+      await this.mostrarAlerta('Error', err?.message || 'No se pudo cargar el registro para editar.');
+      this.modoEdicion = false;
+      this.salidaEditandoId = null;
+    } finally {
+      this.cargando = false;
+      this.cdRef.detectChanges();
+    }
   }
 
   ionViewWillEnter() {
@@ -313,6 +414,16 @@ export class SalidaPage implements OnInit {
   }
 
   /**
+   * Dirección del cliente / empresa elegido como destino, tal como está en su
+   * registro de clientes. Devuelve '' si no hay destinatario o no tiene dirección.
+   */
+  obtenerDireccionEntidadSeleccionada(): string {
+    if (!this.entidadSeleccionadaId) return '';
+    const ent = this.listaEntidades.find(e => e.id === this.entidadSeleccionadaId);
+    return ent?.direccion ? String(ent.direccion).trim() : '';
+  }
+
+  /**
    * Nombre legible del almacén al que se transfiere el cilindro.
    * Devuelve '' si no se eligió ninguno (salida normal, sin transferencia).
    */
@@ -412,7 +523,7 @@ export class SalidaPage implements OnInit {
       return;
     }
 
-    if (haSalido(estado)) {
+    if (haSalido(estado) && !this.seriesOriginalesEdicion.has(normalizarSerie(serieLimpia))) {
       this.cilindroEncontrado = null;
       await this.mostrarAlerta(
         'Ya salió',
@@ -424,7 +535,15 @@ export class SalidaPage implements OnInit {
 
     this.cilindroEncontrado = data;
     this.fechaSalidaActual = new Date();
-    this.resolverOrigenCilindro(data, estado);
+
+    // En edición, una serie que ya era de esta salida conserva su almacén de origen original
+    const origenOriginal = this.origenOriginalPorSerie.get(normalizarSerie(serieLimpia));
+    if (origenOriginal) {
+      this.aplicarOrigenResuelto(origenOriginal.almacenId, null, null);
+      this.origenActualEntidadNombre = this.razonSocial;
+    } else {
+      this.resolverOrigenCilindro(data, estado);
+    }
     this.cdRef.detectChanges();
   }
 
@@ -521,6 +640,7 @@ export class SalidaPage implements OnInit {
       destinoAlmacenId: this.almacenDestinoId,
       destinoAlmacenNombre: this.obtenerNombreAlmacenDestino(),
       destinoEntidadNombre: this.obtenerNombreEntidadSeleccionada(),
+      destinoDireccion: this.obtenerDireccionEntidadSeleccionada(),
       fechaSalida: new Date(),
       metodoIdentificacion: this.metodoIdentificacion,
       ia: this.trazaIAActual
@@ -640,7 +760,9 @@ export class SalidaPage implements OnInit {
 
     const yaFuera = this.listaCilindros
       .map(i => String(i.numeroSerie || '').trim())
-      .filter(serie => serie !== '' && haSalido(estados.get(normalizarSerie(serie))));
+      .filter(serie => serie !== ''
+        && haSalido(estados.get(normalizarSerie(serie)))
+        && !this.seriesOriginalesEdicion.has(normalizarSerie(serie)));
 
     if (yaFuera.length > 0) {
       await this.mostrarAlerta(
@@ -654,7 +776,9 @@ export class SalidaPage implements OnInit {
     const origenesUnicos = new Set(
       this.listaCilindros.map(i => i.origenAlmacenId).filter(id => id !== null && id !== undefined)
     );
-    if (origenesUnicos.size === 0) {
+    if (this.modoEdicion) {
+      // En edición se conserva el almacén de origen de cada cilindro: no se repiten los avisos
+    } else if (origenesUnicos.size === 0) {
       await this.mostrarAlerta(
         'Atención',
         'No se pudo determinar el almacén de origen de uno o más cilindros. Se guardará igual, pero te recomendamos asignarles un almacén (botón "Asignar almacén" en su ficha) para que el próximo historial salga completo.'
@@ -668,6 +792,8 @@ export class SalidaPage implements OnInit {
 
     const almacenOrigenPrincipal = this.listaCilindros[0]?.origenAlmacenId ?? null;
     const destinoTexto = this.textoDestino();
+    // Dirección del cliente/empresa según su registro de clientes (se guarda con cada cilindro)
+    const direccionDestino = this.obtenerDireccionEntidadSeleccionada();
 
     this.cargando = true;
     this.cdRef.detectChanges();
@@ -680,6 +806,7 @@ export class SalidaPage implements OnInit {
         origen_almacen_id: item.origenAlmacenId ?? null,
         origen_nombre: item.origenNombre || '',
         destino: destinoTexto,
+        destino_direccion: direccionDestino,
         // Trazabilidad de la identificación, dentro del JSONB: sin migración.
         metodo_identificacion: item.metodoIdentificacion || 'manual',
         ...(item.ia ? { ia: item.ia } : {})
@@ -701,14 +828,34 @@ export class SalidaPage implements OnInit {
       // Registrar el movimiento de salida. Con este registro el cilindro pasa a
       // estar FUERA (y aparece en Recojo): el estado se calcula desde el
       // historial, no hace falta actualizar la tabla `cilindros`.
-      const { error } = await this.supabaseService.supabase
-        .from('salida_cilindros')
-        .insert([datosSalida]);
+      if (this.modoEdicion && this.salidaEditandoId) {
+        // Edición: se actualiza la misma salida (conserva su fecha y el usuario que la creó)
+        const datosActualizar: any = { ...datosSalida };
+        delete datosActualizar.usuario_id;
 
-      if (error) throw error;
+        const { error } = await this.supabaseService.supabase
+          .from('salida_cilindros')
+          .update(datosActualizar)
+          .eq('id', this.salidaEditandoId);
 
-      await this.mostrarAlerta('¡Éxito!', 'La salida de cilindros se ha registrado correctamente.');
-      this.limpiarFormulario();
+        if (error) throw error;
+
+        await this.mostrarAlerta('¡Éxito!', 'La salida se ha actualizado correctamente.');
+        this.modoEdicion = false;
+        this.salidaEditandoId = null;
+        this.seriesOriginalesEdicion = new Set();
+        this.origenOriginalPorSerie = new Map();
+        this.navCtrl.back();
+      } else {
+        const { error } = await this.supabaseService.supabase
+          .from('salida_cilindros')
+          .insert([datosSalida]);
+
+        if (error) throw error;
+
+        await this.mostrarAlerta('¡Éxito!', 'La salida de cilindros se ha registrado correctamente.');
+        this.limpiarFormulario();
+      }
 
     } catch (err: any) {
       console.error('Error al guardar en Supabase:', err);
