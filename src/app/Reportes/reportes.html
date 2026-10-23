@@ -1,32 +1,224 @@
-<ion-header>
-  <ion-toolbar color="primary">
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/"></ion-back-button>
+      <ion-button (click)="regresar()" class="btn-back">
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Reportes</ion-title>
+    <ion-title class="brand-title">REPORTES</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Generación de Reportes</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <ion-list lines="full">
-        <ion-item button>
-          <ion-label>
-            <h2>Reporte de Cilindros</h2>
-            <p>Estado e inventario general</p>
-          </ion-label>
-        </ion-item>
-        <ion-item button>
-          <ion-label>
-            <h2>Reporte de Movimientos</h2>
-            <p>Historial de salidas y devoluciones</p>
-          </ion-label>
-        </ion-item>
-      </ion-list>
-    </ion-card-content>
-  </ion-card>
+<ion-content class="main-content">
+
+  <!-- AVISOS DE LECTURA -->
+  <div class="aviso" *ngIf="avisos.length > 0">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <div>
+      <span *ngFor="let a of avisos">{{ a }}</span>
+    </div>
+  </div>
+
+  <!-- ================= BUSCAR POR NÚMERO DE SERIE ================= -->
+  <section class="bloque">
+    <div class="bloque-head">
+      <div class="bloque-icono"><ion-icon name="search-outline"></ion-icon></div>
+      <div>
+        <h2>Reporte rápido por serie</h2>
+        <p>Escribe el número de serie y lo imprimes al instante</p>
+      </div>
+    </div>
+
+    <ion-searchbar placeholder="Número de serie..." [debounce]="0" [ngModel]="busqueda"
+      (ionInput)="buscarSerie($event)" (keyup.enter)="elegirPrimero()" (ionClear)="limpiarBusqueda()"
+      autocomplete="off" spellcheck="false" inputmode="search">
+    </ion-searchbar>
+
+    <div class="cargando" *ngIf="cargando">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Cargando datos…</span>
+    </div>
+
+    <!-- Sugerencias -->
+    <div class="sugerencias" *ngIf="sugerencias.length > 0">
+      <button type="button" class="sugerencia" *ngFor="let c of sugerencias" (click)="seleccionar(c)">
+        <span class="badge serie">{{ c.numero_serie }}</span>
+        <span class="badge gas" [ngClass]="obtenerClaseGas(c.tipo_gas)">{{ c.tipo_gas }}</span>
+        <span class="sug-cliente">{{ (c.clientes?.nombre_razon_social || 'SIN CLIENTE') | uppercase }}</span>
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </div>
+
+    <div class="sin-resultado" *ngIf="sinResultado">
+      No se encontró ningún cilindro con "{{ busqueda }}".
+    </div>
+
+    <!-- Resultado -->
+    <div class="resultado" *ngIf="sel">
+      <div class="res-head">
+        <h3>{{ sel.numero_serie }}</h3>
+        <span class="badge gas" [ngClass]="obtenerClaseGas(sel.tipo_gas)">{{ sel.tipo_gas }}</span>
+      </div>
+
+      <div class="situacion" [ngClass]="{
+          'dentro': selSit.estado === 'DENTRO',
+          'fuera': selSit.estado === 'FUERA',
+          'sin': selSit.estado === 'SIN' }">
+        <strong>{{ textoSituacion() }}</strong>
+        <span *ngIf="detalleSituacion()">{{ detalleSituacion() }}</span>
+      </div>
+
+      <div class="acciones-principales">
+        <ion-button class="btn-imprimir" (click)="imprimirCilindro()">
+          <ion-icon name="print-outline" slot="start"></ion-icon>
+          IMPRIMIR REPORTE
+        </ion-button>
+        <ion-button fill="outline" class="btn-pdf" (click)="descargarCilindroPdf()">
+          <ion-icon name="download-outline" slot="start"></ion-icon>
+          PDF
+        </ion-button>
+      </div>
+
+      <div class="datos-grid">
+        <div class="dato full">
+          <span class="label">Propietario</span>
+          <span class="valor">{{ (sel.clientes?.nombre_razon_social || 'SIN CLIENTE') | uppercase }}</span>
+        </div>
+        <div class="dato"><span class="label">Marca</span><span class="valor">{{ sel.marca || 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Año fab.</span><span class="valor">{{ sel.anio_fabricacion || 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Capacidad</span><span class="valor">{{ capacidadDe(sel) }}</span></div>
+        <div class="dato"><span class="label">Peso</span><span class="valor">{{ sel.peso ? sel.peso + ' kg' : 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Color</span><span class="valor">{{ sel.color || 'N/A' }}</span></div>
+        <div class="dato"><span class="label">Prueba hidr. (PH)</span><span class="valor highlight">{{ sel.ph || 'N/A' }}</span></div>
+      </div>
+
+      <h4 class="sub-titulo">Historial ({{ selMovs.length }})</h4>
+      <div class="vacio-hist" *ngIf="selMovs.length === 0">
+        Este cilindro todavía no tiene ingresos, salidas ni recojos.
+      </div>
+      <div class="mov" *ngFor="let m of selMovs"
+        [ngClass]="m.tipo === 'INGRESO' ? 'ingreso' : (m.tipo === 'RECOJO' ? 'recojo' : 'salida')">
+        <span class="punto"></span>
+        <div class="mov-cuerpo">
+          <strong>{{ tituloMov(m) }}</strong>
+          <span>{{ descripcionMov(m) }}</span>
+          <small>{{ m.fecha | date:'dd/MM/yyyy · hh:mm a' }}</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REPORTES GENERALES ================= -->
+  <h3 class="seccion-titulo">Reportes generales</h3>
+
+  <div class="tiles">
+    <button type="button" class="tile" *ngFor="let r of reportes" [class.activo]="reporteActivo === r.id"
+      [ngClass]="'tile-' + r.id" (click)="elegirReporte(r.id)">
+      <div class="tile-icono"><ion-icon [name]="r.icono"></ion-icon></div>
+      <strong>{{ r.titulo }}</strong>
+      <span>{{ r.desc }}</span>
+    </button>
+  </div>
+
+  <!-- Panel del reporte elegido -->
+  <section class="bloque panel" *ngIf="reporteActivo && tabla">
+    <h2 class="panel-titulo">{{ tabla.titulo }}</h2>
+
+    <!-- Filtros -->
+    <div class="filtros">
+
+      <ng-container *ngIf="reporteActivo === 'movimientos'">
+        <label class="campo">
+          <span>Desde</span>
+          <input type="date" [ngModel]="fDesde" (ngModelChange)="fDesde = $event; generar()" />
+        </label>
+        <label class="campo">
+          <span>Hasta</span>
+          <input type="date" [ngModel]="fHasta" (ngModelChange)="fHasta = $event; generar()" />
+        </label>
+        <label class="campo">
+          <span>Movimiento</span>
+          <select [ngModel]="fTipo" (ngModelChange)="fTipo = $event; generar()">
+            <option value="">Todos</option>
+            <option value="INGRESO">Ingresos</option>
+            <option value="SALIDA">Salidas</option>
+            <option value="RECOJO">Recojos</option>
+          </select>
+        </label>
+      </ng-container>
+
+      <ng-container *ngIf="reporteActivo === 'planta'">
+        <label class="campo">
+          <span>Almacén</span>
+          <select [ngModel]="fAlmacen" (ngModelChange)="fAlmacen = $event; generar()">
+            <option value="">Todos</option>
+            <option *ngFor="let a of almacenes" [value]="a">{{ a }}</option>
+            <option value="Sin movimientos (ubicación no registrada)">Sin ubicación registrada</option>
+          </select>
+        </label>
+        <label class="campo">
+          <span>Tipo de gas</span>
+          <select [ngModel]="fGas" (ngModelChange)="fGas = $event; generar()">
+            <option value="">Todos</option>
+            <option *ngFor="let g of gases" [value]="g">{{ g }}</option>
+          </select>
+        </label>
+      </ng-container>
+
+      <label class="campo" *ngIf="reporteActivo === 'ph'">
+        <span>Vencen en los próximos</span>
+        <select [ngModel]="fMeses" (ngModelChange)="fMeses = $event; generar()">
+          <option value="3">3 meses</option>
+          <option value="6">6 meses</option>
+          <option value="12">12 meses</option>
+          <option value="24">24 meses</option>
+        </select>
+      </label>
+
+      <label class="campo ancho">
+        <span>Buscar por serie, cliente o gas</span>
+        <input type="text" placeholder="Escribe para filtrar..." [ngModel]="fTexto"
+          (ngModelChange)="fTexto = $event; generar()" />
+      </label>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen">
+      <span *ngFor="let linea of tabla.resumen">{{ linea }}</span>
+    </div>
+
+    <!-- Botones -->
+    <div class="acciones-reporte">
+      <ion-button class="btn-pdf-lleno" (click)="descargarPdf()" [disabled]="tabla.filas.length === 0">
+        <ion-icon name="download-outline" slot="start"></ion-icon>
+        PDF
+      </ion-button>
+      <ion-button fill="outline" class="btn-pdf" (click)="imprimirReporte()" [disabled]="tabla.filas.length === 0">
+        <ion-icon name="print-outline" slot="start"></ion-icon>
+        IMPRIMIR
+      </ion-button>
+      <ion-button fill="outline" class="btn-pdf" (click)="descargarExcel()" [disabled]="tabla.filas.length === 0">
+        <ion-icon name="document-text-outline" slot="start"></ion-icon>
+        EXCEL
+      </ion-button>
+    </div>
+
+    <!-- Vista previa en tarjetas -->
+    <div class="vacio-hist" *ngIf="tabla.filas.length === 0">No hay registros con estos filtros.</div>
+
+    <div class="fila-card" *ngFor="let f of tabla.filas.slice(0, 50); let i = index" [class.alerta]="tabla.alertas[i]">
+      <div class="fila-titulo">{{ f[tabla.idxTitulo] }}</div>
+      <div class="fila-datos">
+        <div class="fd" *ngFor="let c of columnasSecundarias(tabla)">
+          <span class="label">{{ c.t }}</span>
+          <span class="valor">{{ f[c.i] }}</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="mas" *ngIf="tabla.filas.length > 50">
+      Se muestran 50 de {{ tabla.filas.length }}. El PDF y el Excel llevan todos.
+    </p>
+  </section>
+
 </ion-content>
