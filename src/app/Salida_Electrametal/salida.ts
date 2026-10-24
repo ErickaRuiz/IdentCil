@@ -121,6 +121,18 @@ export class SalidaPage implements OnInit {
   entidadesFiltradas: any[] = [];
   fechaSalidaActual: Date = new Date();
 
+  // ---------------- Préstamo del cilindro ----------------
+  // Días de préstamo que se le dan al destinatario (null = sin préstamo, no se envían recordatorios)
+  diasPrestamo: number | null = null;
+  readonly opcionesDiasPrestamo: number[] = [3, 5, 7, 10, 15, 30];
+  // Fecha base del préstamo: la de la salida original al editar, o la actual al crear
+  private fechaBasePrestamo: Date | null = null;
+
+  // Datos de ELECTRAMETAL desde los que se enviarán los recordatorios
+  readonly EMPRESA_NOMBRE = 'ELECTRAMETAL NORPERÚ S.A.C.';
+  readonly EMPRESA_WHATSAPP = '987654321';
+  readonly EMPRESA_CORREO = 'ventas@electrametal.com';
+
   private searchTimeout: any;
 
   // --- Modo edición: se llega desde el Historial de Salidas con ?editar=<id> ---
@@ -187,6 +199,8 @@ export class SalidaPage implements OnInit {
       this.almacenDestinoId = data.almacen_destino_id ?? null;
       this.observacion = data.observacion || '';
       this.almacenId = data.almacen_id ?? null;
+      this.diasPrestamo = data.dias_prestamo ?? null;
+      this.fechaBasePrestamo = data.created_at ? new Date(data.created_at) : null;
 
       const nombreDestinoAlmacen = this.obtenerNombreAlmacenDestino();
       const nombreEntidad = this.obtenerNombreEntidadSeleccionada();
@@ -748,6 +762,13 @@ export class SalidaPage implements OnInit {
       return;
     }
 
+    // Días de préstamo (opcional): si se indican deben ser un número entero válido
+    if (this.diasPrestamo !== null &&
+        (!Number.isInteger(this.diasPrestamo) || this.diasPrestamo < 1 || this.diasPrestamo > 365)) {
+      await this.mostrarAlerta('Días de préstamo', 'Indica un número de días entero entre 1 y 365, o déjalo vacío si no es un préstamo.');
+      return;
+    }
+
     // Verificación final anti-duplicados: ninguno de los cilindros de la lista
     // debe figurar ya como salido (por ejemplo, si se despachó desde otro dispositivo).
     let estados: Map<string, EstadoCilindro>;
@@ -821,6 +842,8 @@ export class SalidaPage implements OnInit {
         almacen_id: almacenOrigenPrincipal,
         almacen_destino_id: this.almacenDestinoId,
         observacion: observacionLimpia || null,
+        dias_prestamo: this.diasPrestamo,
+        fecha_vencimiento: this.fechaVencimientoISO,
         cilindros_egresados: cilindrosPayload,
         usuario_id: usuarioId
       };
@@ -870,6 +893,36 @@ export class SalidaPage implements OnInit {
     }
   }
 
+  // ===================== PRÉSTAMO =====================
+
+  // Lee el valor escrito en el campo de días (vacío = sin préstamo)
+  onDiasPrestamoInput(event: any) {
+    const texto = String(event?.detail?.value ?? '').trim();
+    this.diasPrestamo = texto === '' ? null : Number(texto);
+  }
+
+  seleccionarDiasPrestamo(dias: number) {
+    this.diasPrestamo = this.diasPrestamo === dias ? null : dias;
+  }
+
+  // Fecha de vencimiento del préstamo = fecha de salida + días de préstamo
+  get fechaVencimiento(): Date | null {
+    if (this.diasPrestamo === null || !Number.isInteger(this.diasPrestamo) || this.diasPrestamo < 1) return null;
+    const base = this.fechaBasePrestamo ? new Date(this.fechaBasePrestamo) : new Date();
+    const venc = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+    venc.setDate(venc.getDate() + this.diasPrestamo);
+    return venc;
+  }
+
+  // Formato AAAA-MM-DD (columna de tipo date en Supabase), con fecha local
+  get fechaVencimientoISO(): string | null {
+    const v = this.fechaVencimiento;
+    if (!v) return null;
+    const mm = String(v.getMonth() + 1).padStart(2, '0');
+    const dd = String(v.getDate()).padStart(2, '0');
+    return `${v.getFullYear()}-${mm}-${dd}`;
+  }
+
   limpiarFormulario() {
     this.listaCilindros = [];
     this.observacion = '';
@@ -880,6 +933,8 @@ export class SalidaPage implements OnInit {
     this.entidadSeleccionadaId = null;
     this.almacenId = null;
     this.almacenDestinoId = null;
+    this.diasPrestamo = null;
+    this.fechaBasePrestamo = null;
     this.origenActualNombre = '';
     this.origenActualEntidadNombre = '';
     this.origenActualEntidadId = null;

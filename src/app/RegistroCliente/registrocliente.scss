@@ -127,3 +127,48 @@ ion-input {
   --text-transform: uppercase;
   text-transform: uppercase;
 }
+/* Selector del medio de alerta */
+.alert-options {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 6px;
+}
+
+.alert-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  ion-icon {
+    font-size: 1.3rem;
+  }
+
+  &.activo.whatsapp {
+    border-color: #25d366;
+    background: #e8fbf0;
+    color: #128c4a;
+  }
+
+  &.activo.correo {
+    border-color: #00A859;
+    background: #e6f7ef;
+    color: #00794a;
+  }
+}
+
+.alert-hint {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}

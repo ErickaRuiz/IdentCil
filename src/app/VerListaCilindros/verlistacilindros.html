@@ -27,6 +27,13 @@
       <strong>{{ cilindrosFiltrados.length }}</strong>
       <span *ngIf="!filtroCilindro"> cilindro{{ listaCilindros.length === 1 ? '' : 's' }} registrado{{ listaCilindros.length === 1 ? '' : 's' }}</span>
       <span *ngIf="filtroCilindro"> de {{ listaCilindros.length }} cilindros</span>
+
+      <!-- RESUMEN POR TIPO DE GAS -->
+      <div class="contador-gases" *ngIf="resumenGases.length > 0">
+        <span class="badge gas" *ngFor="let g of resumenGases" [ngClass]="g.clase">
+          {{ g.nombre }}: <span class="chip-num">{{ g.cantidad }}</span>
+        </span>
+      </div>
     </div>
   </div>
 

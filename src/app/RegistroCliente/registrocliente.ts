@@ -28,7 +28,8 @@ import {
   locationOutline, 
   callOutline, 
   mailOutline,
-  personCircleOutline
+  personCircleOutline,
+  logoWhatsapp
 } from 'ionicons/icons';
 import { SupabaseService } from '../services/supabase';
 
@@ -74,7 +75,8 @@ export class RegistroClienteComponent implements OnInit {
     persona_responsable: '',
     direccion: '',
     telefono: '',
-    email: ''
+    email: '',
+    medio_alerta: 'WHATSAPP'   // WHATSAPP o CORREO: por dónde recibirá las alertas automáticas
   };
 
   constructor() {
@@ -87,7 +89,8 @@ export class RegistroClienteComponent implements OnInit {
       locationOutline,
       callOutline,
       mailOutline,
-      personCircleOutline
+      personCircleOutline,
+      logoWhatsapp
     });
   }
 
@@ -124,7 +127,8 @@ export class RegistroClienteComponent implements OnInit {
           persona_responsable: data.persona_responsable || '',
           direccion: data.direccion || '',
           telefono: data.telefono || '',
-          email: data.email || ''
+          email: data.email || '',
+          medio_alerta: data.medio_alerta || 'WHATSAPP'
         };
       }
     } catch (error: any) {
@@ -151,6 +155,10 @@ export class RegistroClienteComponent implements OnInit {
     this.cliente.persona_responsable = '';
   }
 
+  seleccionarMedioAlerta(medio: 'WHATSAPP' | 'CORREO') {
+    this.cliente.medio_alerta = medio;
+  }
+
   async guardarCliente() {
     const esRuc = this.cliente.tipo_documento === 'RUC';
     const numDocLen = this.cliente.num_documento.trim().length;
@@ -171,6 +179,17 @@ export class RegistroClienteComponent implements OnInit {
       return;
     }
 
+    // El medio elegido para las alertas necesita su dato de contacto
+    if (this.cliente.medio_alerta === 'WHATSAPP' && !this.cliente.telefono.trim()) {
+      this.mostrarToast('Ingresa el teléfono para enviar las alertas por WhatsApp', 'warning');
+      return;
+    }
+
+    if (this.cliente.medio_alerta === 'CORREO' && !/^\S+@\S+\.\S+$/.test(this.cliente.email.trim())) {
+      this.mostrarToast('Ingresa un correo válido para enviar las alertas por Gmail', 'warning');
+      return;
+    }
+
     this.cargando = true;
     this.cdr.detectChanges();
 
@@ -185,7 +204,8 @@ export class RegistroClienteComponent implements OnInit {
             persona_responsable: esRuc ? this.cliente.persona_responsable.trim() : null,
             direccion: this.cliente.direccion,
             telefono: this.cliente.telefono,
-            email: this.cliente.email
+            email: this.cliente.email,
+            medio_alerta: this.cliente.medio_alerta
           })
           .eq('id', this.clienteId);
 
@@ -203,6 +223,7 @@ export class RegistroClienteComponent implements OnInit {
               direccion: this.cliente.direccion,
               telefono: this.cliente.telefono,
               email: this.cliente.email,
+              medio_alerta: this.cliente.medio_alerta,
               fecha_registro: new Date().toISOString()
             }
           ]);

@@ -135,6 +135,15 @@
                         </div>
                     </div>
 
+                    <!-- Medio de alerta automática -->
+                    <div class="info-row">
+                        <div class="info-icon"><ion-icon name="notifications-outline"></ion-icon></div>
+                        <div class="info-text">
+                            <span class="info-label">Alertas automáticas por</span>
+                            <span class="info-value">{{ clienteDetalle.medio_alerta === 'CORREO' ? 'Gmail / Correo' : 'WhatsApp' }}</span>
+                        </div>
+                    </div>
+
                     <!-- Fecha de registro -->
                     <div class="info-row" *ngIf="clienteDetalle.fecha_registro">
                         <div class="info-icon"><ion-icon name="calendar-outline"></ion-icon></div>

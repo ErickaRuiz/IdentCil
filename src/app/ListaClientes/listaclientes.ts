@@ -15,7 +15,7 @@ import { addIcons } from 'ionicons';
 import {
   pencilOutline, trashOutline, createOutline, businessOutline, personOutline,
   callOutline, logoWhatsapp, mailOutline, locationOutline, cardOutline,
-  calendarOutline, personCircleOutline, closeOutline
+  calendarOutline, personCircleOutline, closeOutline, notificationsOutline
 } from 'ionicons/icons';
 import { SupabaseService } from '../services/supabase';
 
@@ -52,7 +52,7 @@ export class ListaClientesComponent implements OnInit {
     addIcons({
       pencilOutline, trashOutline, createOutline, businessOutline, personOutline,
       callOutline, logoWhatsapp, mailOutline, locationOutline, cardOutline,
-      calendarOutline, personCircleOutline, closeOutline
+      calendarOutline, personCircleOutline, closeOutline, notificationsOutline
     });
   }
 

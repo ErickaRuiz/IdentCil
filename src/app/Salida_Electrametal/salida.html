@@ -77,6 +77,38 @@
         </ion-item>
       </div>
 
+      <!-- Días de préstamo: define la fecha en que se recogerá el cilindro y cuándo se enviarán los recordatorios -->
+      <div class="full-field">
+        <div class="prestamo-box">
+          <div class="prestamo-title">
+            <ion-icon name="calendar-outline"></ion-icon>
+            Días de préstamo
+          </div>
+
+          <ion-item fill="outline" class="custom-select">
+            <ion-label position="stacked">¿Cuántos días se le presta?</ion-label>
+            <ion-input type="number" inputmode="numeric" min="1" max="365" placeholder="Ej. 7 (vacío = sin préstamo)"
+              [ngModel]="diasPrestamo" (ionInput)="onDiasPrestamoInput($event)"></ion-input>
+          </ion-item>
+
+          <div class="prestamo-chips">
+            <button type="button" class="chip-dias" *ngFor="let d of opcionesDiasPrestamo"
+              [class.activo]="diasPrestamo === d" (click)="seleccionarDiasPrestamo(d)">
+              {{ d }} días
+            </button>
+          </div>
+
+          <div class="prestamo-vence" *ngIf="fechaVencimiento as venc">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>Vence el <strong>{{ venc | date:'dd/MM/yyyy' }}</strong>. Se avisará 2 días antes, 1 día antes y el mismo día.</span>
+          </div>
+
+          <div class="prestamo-remitente" *ngIf="diasPrestamo">
+            Los avisos saldrán de ELECTRAMETAL — WhatsApp {{ EMPRESA_WHATSAPP }} · {{ EMPRESA_CORREO }}
+          </div>
+        </div>
+      </div>
+
       <!-- Modal Buscador de Cliente / Empresa -->
       <ion-modal [isOpen]="modalAbierto" (didDismiss)="cerrarModalBuscador()">
         <ng-template>

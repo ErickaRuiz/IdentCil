@@ -60,9 +60,28 @@ ion-searchbar {
   }
 
   .contador-texto {
+    flex: 1;
+    min-width: 0;
     font-size: 0.88rem;
     color: #166534;
     font-weight: 600;
+
+    .contador-gases {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+
+      .badge {
+        font-size: 0.72rem;
+        padding: 3px 9px;
+      }
+
+      .chip-num {
+        font-weight: 800;
+        font-size: 0.8rem;
+      }
+    }
 
     strong {
       font-size: 1.05rem;

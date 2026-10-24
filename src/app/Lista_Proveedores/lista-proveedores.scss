@@ -1,0 +1,357 @@
+.custom-toolbar {
+  --background: #00A859;
+  --color: #ffffff;
+}
+
+.brand-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.4px;
+}
+
+ion-searchbar {
+  --background: #ffffff;
+  --border-radius: 12px;
+  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --placeholder-color: #94a3b8;
+  --icon-color: #00A859;
+  padding: 0 8px 8px;
+}
+
+.main-content {
+  --background: #f1f5f9;
+  --padding-start: 14px;
+  --padding-end: 14px;
+}
+
+/* Contador */
+.contador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #f0fdf4, #e6f7ef);
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 12px 0 14px;
+  box-shadow: 0 2px 6px rgba(0, 168, 89, 0.08);
+
+  .contador-icono {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #00A859;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .contador-texto {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.88rem;
+    color: #166534;
+    font-weight: 600;
+
+    strong {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #00A859;
+    }
+  }
+}
+
+.btn-nuevo {
+  --background: #00A859;
+  --border-radius: 10px;
+  --box-shadow: 0 3px 8px rgba(0, 168, 89, 0.25);
+  font-weight: 700;
+  text-transform: none;
+  margin: 0;
+}
+
+/* Estados vacíos y de carga */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: #64748b;
+  font-weight: 600;
+
+  ion-spinner {
+    color: #00A859;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+
+  ion-icon {
+    font-size: 56px;
+    color: #cbd5e1;
+  }
+
+  h3 {
+    margin: 10px 0 4px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #475569;
+  }
+
+  p {
+    margin: 0 0 14px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+}
+
+/* Tarjetas */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 24px;
+}
+
+.provider-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #00A859;
+  border-radius: 14px;
+  padding: 12px 8px 12px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+
+  .card-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .row-top {
+    margin-bottom: 6px;
+  }
+
+  .row-name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin-bottom: 6px;
+    word-break: break-word;
+  }
+
+  .row-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 3px;
+
+    ion-icon {
+      color: #00A859;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    ion-button {
+      --padding-start: 6px;
+      --padding-end: 6px;
+      height: 38px;
+      margin: 0;
+    }
+  }
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+
+  &.ruc {
+    background-color: #e6f7ef;
+    color: #00A859;
+  }
+}
+
+/* ===================== MODAL DETALLE ===================== */
+.detail-content {
+  --background: #f1f5f9;
+}
+
+.detail-hero {
+  background: linear-gradient(160deg, #00A859 0%, #007a40 100%);
+  text-align: center;
+  padding: 28px 20px 56px;
+  color: #ffffff;
+
+  .hero-avatar {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+
+  h2 {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    line-height: 1.25;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 999px;
+  }
+}
+
+.detail-card {
+  background: #ffffff;
+  border-radius: 22px;
+  margin: -34px 8px 16px;
+  padding: 8px 16px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eef2f6;
+
+  &.column {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .row-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .row-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #e6f7ef;
+    color: #00A859;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .row-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .row-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #64748b;
+  }
+
+  .row-value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    word-break: break-word;
+  }
+}
+
+.contact-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+
+  .contact-value {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 10px;
+    word-break: break-all;
+
+    &.email {
+      font-size: 0.92rem;
+    }
+  }
+
+  .contact-actions {
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.btn-contact {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: none;
+  color: #ffffff;
+
+  &.whatsapp { background: #25d366; }
+  &.llamar   { background: #0052cc; }
+  &.correo   { background: #00A859; }
+}
+
+.btn-editar {
+  --background: #00A859;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 12px rgba(0, 168, 89, 0.25);
+  height: 46px;
+  margin: 18px 0 0;
+  font-weight: 800;
+  text-transform: none;
+}

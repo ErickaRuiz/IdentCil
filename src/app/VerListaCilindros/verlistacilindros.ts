@@ -65,6 +65,9 @@ export class VerListaCilindrosPage implements OnInit {
   isModalOpen: boolean = false;
   cilindroSeleccionado: any = null;
 
+  // Resumen de cantidad de cilindros por tipo de gas (para el contador)
+  resumenGases: { nombre: string; cantidad: number; clase: string }[] = [];
+
   constructor(
     private supabaseService: SupabaseService,
     private cdRef: ChangeDetectorRef,
@@ -162,6 +165,7 @@ export class VerListaCilindrosPage implements OnInit {
       this.filtrarCilindros({ detail: { value: this.filtroCilindro } });
     } else {
       this.cilindrosFiltrados = [...this.listaCilindros];
+      this.actualizarResumenGases();
     }
 
     this.cdRef.detectChanges();
@@ -173,6 +177,7 @@ export class VerListaCilindrosPage implements OnInit {
 
     if (!termino) {
       this.cilindrosFiltrados = [...this.listaCilindros];
+      this.actualizarResumenGases();
       return;
     }
 
@@ -187,6 +192,26 @@ export class VerListaCilindrosPage implements OnInit {
              cliente.includes(termino) ||
              doc.includes(termino);
     });
+
+    this.actualizarResumenGases();
+  }
+
+  // Cuenta los cilindros mostrados agrupados por tipo de gas
+  actualizarResumenGases() {
+    const conteo = new Map<string, number>();
+
+    for (const c of this.cilindrosFiltrados) {
+      const gas = c.tipoGas || 'NO ESPECIFICADO';
+      conteo.set(gas, (conteo.get(gas) || 0) + 1);
+    }
+
+    this.resumenGases = Array.from(conteo.entries())
+      .map(([nombre, cantidad]) => ({
+        nombre,
+        cantidad,
+        clase: this.obtenerClaseGas(nombre)
+      }))
+      .sort((a, b) => b.cantidad - a.cantidad);
   }
 
   obtenerClaseGas(tipoGas: string): string {
@@ -368,40 +393,102 @@ export class VerListaCilindrosPage implements OnInit {
     }
   }
 
+  // Correos autorizados para eliminar cilindros
+  private readonly EMAILS_ADMIN: string[] = [
+    'ruizericka78@gmail.com',
+    'davidruizpolo.drp@gmail.com'   // <-- cambia por el correo de la segunda persona
+  ].map(e => e.toLowerCase());
+
   async eliminarCilindro(item: any, event?: Event) {
     if (event) {
       event.stopPropagation();
     }
 
+    // Verificar el usuario logueado
+    const { data: authData } = await this.supabaseService.supabase.auth.getUser();
+    const emailActual = (authData?.user?.email || '').toLowerCase();
+
+    if (!this.EMAILS_ADMIN.includes(emailActual)) {
+      const aviso = await this.alertCtrl.create({
+        header: 'Acceso denegado',
+        message: 'No tienes permiso para eliminar cilindros.',
+        buttons: ['Aceptar']
+      });
+      await aviso.present();
+      return;
+    }
+
     const alert = await this.alertCtrl.create({
       header: 'Confirmar eliminación',
-      message: `¿Estás seguro de eliminar el cilindro con serie ${item.numeroSerie}?`,
+      message: `¿Estás seguro que quieres eliminar el cilindro con serie ${item.numeroSerie}?`,
       buttons: [
         {
-          text: 'Cancelar',
+          text: 'No',
           role: 'cancel'
         },
         {
-          text: 'Eliminar',
+          text: 'Sí',
           role: 'destructive',
-          handler: async () => {
-            const { error } = await this.supabaseService.supabase
-              .from('cilindros')
-              .delete()
-              .eq('id', item.id);
-
-            if (error) {
-              console.error('Error al eliminar el cilindro:', error.message);
-              return;
-            }
-
-            this.obtenerCilindros();
+          handler: () => {
+            // Pasa a la segunda confirmación
+            this.segundaConfirmacion(item);
           }
         }
       ]
     });
 
     await alert.present();
+  }
+
+  // Segundo formulario: confirmar definitivamente
+  private async segundaConfirmacion(item: any) {
+    const alertConfirmar = await this.alertCtrl.create({
+      header: 'Confirmar',
+      message: `Esta acción no se puede deshacer. ¿Confirmas que quieres eliminar el cilindro con serie ${item.numeroSerie}?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Confirmar',
+          role: 'destructive',
+          handler: () => {
+            this.ejecutarEliminacion(item);
+          }
+        }
+      ]
+    });
+
+    await alertConfirmar.present();
+  }
+
+  // Elimina el cilindro y muestra la alerta de resultado
+  private async ejecutarEliminacion(item: any) {
+    const { error } = await this.supabaseService.supabase
+      .from('cilindros')
+      .delete()
+      .eq('id', item.id);
+
+    if (error) {
+      console.error('Error al eliminar el cilindro:', error.message);
+      const alertError = await this.alertCtrl.create({
+        header: 'Error',
+        message: 'No se pudo eliminar el cilindro. Inténtalo de nuevo.',
+        buttons: ['Aceptar']
+      });
+      await alertError.present();
+      return;
+    }
+
+    this.obtenerCilindros();
+
+    const alertOk = await this.alertCtrl.create({
+      header: 'Cilindro eliminado',
+      message: `El cilindro con serie ${item.numeroSerie} fue eliminado correctamente.`,
+      buttons: ['Aceptar']
+    });
+    await alertOk.present();
   }
 
   regresar() {

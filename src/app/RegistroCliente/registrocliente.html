@@ -108,6 +108,26 @@
         </ion-item>
       </div>
 
+      <!-- Medio por el que recibirá las alertas automáticas -->
+      <div class="input-card">
+        <ion-label class="input-label">Enviar alertas automáticas por</ion-label>
+        <div class="alert-options">
+          <div class="alert-option whatsapp" [class.activo]="cliente.medio_alerta === 'WHATSAPP'"
+            (click)="seleccionarMedioAlerta('WHATSAPP')">
+            <ion-icon name="logo-whatsapp"></ion-icon>
+            <span>WhatsApp</span>
+          </div>
+          <div class="alert-option correo" [class.activo]="cliente.medio_alerta === 'CORREO'"
+            (click)="seleccionarMedioAlerta('CORREO')">
+            <ion-icon name="mail-outline"></ion-icon>
+            <span>Gmail / Correo</span>
+          </div>
+        </div>
+        <p class="alert-hint">
+          {{ cliente.medio_alerta === 'WHATSAPP' ? 'Se usará el teléfono registrado.' : 'Se usará el correo registrado.' }}
+        </p>
+      </div>
+
       <!-- Botón de Acción Dinámico -->
       <div class="action-container">
         <!-- Botón principal de guardado -->

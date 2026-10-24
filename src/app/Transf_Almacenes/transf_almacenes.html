@@ -1,0 +1,137 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar style="--background: #177c4d; --color: #ffffff;">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Transferencia entre almacenes</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <!-- Transferencia registrada: reporte -->
+  <div class="card exito" *ngIf="ultima">
+    <div class="exito-head">
+      <ion-icon name="checkmark-circle"></ion-icon>
+      <div>
+        <h3>Transferencia registrada</h3>
+        <span>{{ ultima.cilindros.length }} cilindro(s) enviados a {{ ultima.destino }}</span>
+      </div>
+    </div>
+    <button type="button" class="btn-reporte" (click)="descargarReporte()" [disabled]="generandoPdf">
+      <ion-spinner *ngIf="generandoPdf" name="crescent"></ion-spinner>
+      <ng-container *ngIf="!generandoPdf">
+        <ion-icon name="document-text-outline"></ion-icon> Descargar reporte PDF
+      </ng-container>
+    </button>
+    <button type="button" class="btn-nueva" (click)="nuevaTransferencia()">
+      <ion-icon name="add-circle-outline"></ion-icon> Nueva transferencia
+    </button>
+  </div>
+
+  <ng-container *ngIf="!ultima">
+
+    <!-- 1. Almacén de destino -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon"><ion-icon name="storefront-outline"></ion-icon></div>
+        <div>
+          <h3>¿A qué almacén los mandas?</h3>
+          <span>Elige el almacén de destino</span>
+        </div>
+      </div>
+
+      <select [(ngModel)]="destinoId">
+        <option [ngValue]="null">Seleccionar almacén…</option>
+        <option *ngFor="let a of almacenes" [ngValue]="a.id">{{ a.nombre }}</option>
+      </select>
+    </div>
+
+    <!-- 2. Cilindros registrados -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon"><ion-icon name="cube-outline"></ion-icon></div>
+        <div>
+          <h3>Cilindros registrados</h3>
+          <span>Toca los que quieras mandar (puedes elegir varios)</span>
+        </div>
+      </div>
+
+      <div class="search-row">
+        <div class="search-box">
+          <ion-icon name="search-outline" class="search-icon"></ion-icon>
+          <input type="text" [(ngModel)]="busqueda" name="busqueda" placeholder="Buscar por serie"
+            autocomplete="off" autocapitalize="characters" spellcheck="false" (input)="alEscribir()" />
+          <button type="button" class="btn-limpiar" *ngIf="busqueda" (click)="limpiarBusqueda()">
+            <ion-icon name="close-circle"></ion-icon>
+          </button>
+        </div>
+        <button type="button" class="btn-scan" (click)="abrirEscaner()" aria-label="Escanear códigos">
+          <ion-icon name="scan-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="ayuda">Con la cámara puedes escanear varios seguidos; ciérrala para terminar.</div>
+
+      <div class="cargando" *ngIf="buscando"><ion-spinner name="crescent"></ion-spinner></div>
+
+      <div class="lista-vacia" *ngIf="!buscando && resultados.length === 0">
+        No se encontraron cilindros.
+      </div>
+
+      <div class="lista-cil" *ngIf="resultados.length > 0">
+        <button type="button" class="fila" *ngFor="let c of resultados" (click)="alternar(c)"
+          [class.elegido]="estaElegido(c.numero_serie)">
+          <ion-icon class="check" [name]="estaElegido(c.numero_serie) ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+          <div class="fila-info">
+            <strong>{{ c.numero_serie }}</strong>
+            <span>{{ c.tipo_gas || 'NO ESPECIFICADO' }}<ng-container *ngIf="c.marca"> · {{ c.marca }}</ng-container></span>
+          </div>
+          <ion-spinner *ngIf="validando.has(c.numero_serie)" name="crescent"></ion-spinner>
+        </button>
+        <div class="ayuda" *ngIf="resultados.length >= 40">Se muestran 40. Escribe parte de la serie para acotar.</div>
+      </div>
+    </div>
+
+    <!-- 3. Elegidos -->
+    <div class="card" *ngIf="seleccionados.length > 0">
+      <div class="lista-titulo">{{ seleccionados.length }} cilindro(s) elegido(s)</div>
+
+      <div class="item" *ngFor="let c of seleccionados; let i = index"
+        [class.conflicto]="destinoId && c.almacenId === destinoId">
+        <div class="item-info">
+          <strong>{{ c.numero_serie }}</strong>
+          <span>{{ c.tipo_gas || 'NO ESPECIFICADO' }} · está en {{ c.almacenNombre }}</span>
+        </div>
+        <button type="button" class="btn-quitar" (click)="quitar(i)" aria-label="Quitar">
+          <ion-icon name="trash-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="error" *ngIf="yaEnDestino.length > 0">
+        <ion-icon name="alert-circle"></ion-icon>
+        {{ yaEnDestino.length }} cilindro(s) ya están en {{ nombreAlmacen(destinoId) }}. Quítalos para continuar.
+      </div>
+    </div>
+
+    <!-- 4. Observaciones y confirmar -->
+    <div class="card">
+      <label class="campo">
+        <span class="etiqueta">Observaciones (opcional)</span>
+        <textarea [(ngModel)]="observaciones" rows="2" placeholder="Ej. traslado por falta de espacio"></textarea>
+      </label>
+
+      <div class="resumen" *ngIf="puedeConfirmar">
+        Se enviarán <strong>{{ seleccionados.length }}</strong> cilindro(s) a
+        <strong>{{ nombreAlmacen(destinoId) }}</strong>.
+      </div>
+
+      <button type="button" class="btn-confirmar" (click)="confirmar()" [disabled]="!puedeConfirmar">
+        <ion-spinner *ngIf="guardando" name="crescent"></ion-spinner>
+        <ng-container *ngIf="!guardando">
+          <ion-icon name="swap-horizontal-outline"></ion-icon> Confirmar transferencia
+        </ng-container>
+      </button>
+    </div>
+
+  </ng-container>
+</ion-content>

@@ -101,7 +101,7 @@
           <div>
             <span class="ub-etiqueta">Dentro de planta</span>
             <strong>{{ r.almacenNombre || 'Sin almacén asignado' }}</strong>
-            <span class="ub-fecha" *ngIf="r.fecha">Ingresó el {{ r.fecha }}</span>
+            <span class="ub-fecha" *ngIf="r.fecha">{{ r.viaTransferencia ? 'Transferido el' : 'Ingresó el' }} {{ r.fecha }}</span>
           </div>
         </ng-container>
 
@@ -121,6 +121,15 @@
             <strong>No tiene ingreso ni salida registrados</strong>
           </div>
         </ng-container>
+      </div>
+
+      <!-- Estado del cilindro (según como se ingresó) -->
+      <div class="res-estado-cil" *ngIf="r.estadoCilindro" [ngClass]="obtenerClaseEstado(r.estadoCilindro)">
+        <ion-icon name="cube-outline"></ion-icon>
+        <div>
+          <span class="ub-etiqueta">Estado al ingresar</span>
+          <strong>{{ r.estadoCilindro }}</strong>
+        </div>
       </div>
 
       <!-- Propietario -->
@@ -205,6 +214,16 @@
       </ion-card-content>
     </ion-card>
 
+    <ion-card class="module-card" (click)="navegarA('/transf-almacenes')">
+      <ion-card-content>
+        <div class="icon-wrapper transferencia">
+          <ion-icon name="swap-horizontal-outline"></ion-icon>
+        </div>
+        <h3>Transferencia entre almacenes</h3>
+        <p>Mover cilindros de un almacén a otro</p>
+      </ion-card-content>
+    </ion-card>
+
     <ion-card class="module-card" (click)="navegarA('/registrocliente')">
       <ion-card-content>
         <div class="icon-wrapper clientes">
@@ -212,6 +231,16 @@
         </div>
         <h3>Registro de clientes</h3>
         <p>Registro de empresas y RUC para asignación</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="module-card" (click)="navegarA('/registro-proveedores')">
+      <ion-card-content>
+        <div class="icon-wrapper clientes">
+          <ion-icon name="storefront-outline"></ion-icon>
+        </div>
+        <h3>Registro de proveedores</h3>
+        <p>Registro de proveedores y su RUC</p>
       </ion-card-content>
     </ion-card>
 

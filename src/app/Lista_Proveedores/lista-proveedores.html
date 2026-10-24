@@ -1,0 +1,200 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/registro-proveedores" color="light"></ion-back-button>
+    </ion-buttons>
+    <ion-title class="brand-title">LISTA DE PROVEEDORES</ion-title>
+  </ion-toolbar>
+
+  <ion-toolbar class="custom-toolbar">
+    <ion-searchbar placeholder="Buscar por Razón Social o RUC..." [debounce]="150" [(ngModel)]="filtro"
+      (ionInput)="filtrarProveedores($event)">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-content">
+
+  <!-- Contador -->
+  <div class="contador" *ngIf="listaProveedores.length > 0">
+    <div class="contador-icono">
+      <ion-icon name="storefront-outline"></ion-icon>
+    </div>
+    <div class="contador-texto">
+      <strong>{{ proveedoresFiltrados.length }}</strong>
+      <span *ngIf="!filtro"> proveedor{{ listaProveedores.length === 1 ? '' : 'es' }} registrado{{ listaProveedores.length === 1 ? '' : 's' }}</span>
+      <span *ngIf="filtro"> de {{ listaProveedores.length }} proveedores</span>
+    </div>
+    <ion-button size="small" class="btn-nuevo" (click)="irARegistro()">
+      <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+      Nuevo
+    </ion-button>
+  </div>
+
+  <!-- Cargando -->
+  <div class="loading-state" *ngIf="cargando && listaProveedores.length === 0">
+    <ion-spinner name="crescent"></ion-spinner>
+    <span>Cargando proveedores...</span>
+  </div>
+
+  <!-- Sin resultados -->
+  <div class="empty-state" *ngIf="!cargando && proveedoresFiltrados.length === 0">
+    <ion-icon name="storefront-outline"></ion-icon>
+    <h3>{{ listaProveedores.length === 0 ? 'Aún no hay proveedores' : 'No se encontraron proveedores' }}</h3>
+    <p *ngIf="filtro">No hay registros que coincidan con "{{ filtro }}"</p>
+    <ion-button *ngIf="listaProveedores.length === 0" class="btn-nuevo" (click)="irARegistro()">
+      <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+      Registrar proveedor
+    </ion-button>
+  </div>
+
+  <!-- Tarjetas -->
+  <div class="list-container" *ngIf="proveedoresFiltrados.length > 0">
+    <div class="provider-card" *ngFor="let item of proveedoresFiltrados">
+
+      <!-- CLIC EN LA TARJETA PARA VER EL DETALLE COMPLETO -->
+      <div class="card-info" (click)="verDetalle(item)">
+        <div class="row-top">
+          <span class="badge ruc">RUC: {{ item.ruc }}</span>
+        </div>
+
+        <div class="row-name">{{ item.razon_social | uppercase }}</div>
+
+        <div class="row-detail" *ngIf="item.persona_responsable">
+          <ion-icon name="person-circle-outline"></ion-icon>
+          <span>{{ item.persona_responsable }}</span>
+        </div>
+        <div class="row-detail" *ngIf="item.telefono">
+          <ion-icon name="call-outline"></ion-icon>
+          <span>{{ item.telefono }}</span>
+        </div>
+        <div class="row-detail" *ngIf="item.email">
+          <ion-icon name="mail-outline"></ion-icon>
+          <span>{{ item.email }}</span>
+        </div>
+        <div class="row-detail" *ngIf="item.direccion">
+          <ion-icon name="location-outline"></ion-icon>
+          <span>{{ item.direccion }}</span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <ion-button fill="clear" color="primary" (click)="$event.stopPropagation(); editarProveedor(item)">
+          <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="$event.stopPropagation(); eliminarProveedor(item)">
+          <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+
+    </div>
+  </div>
+
+</ion-content>
+
+<!-- MODAL: DETALLE DEL PROVEEDOR -->
+<ion-modal [isOpen]="isModalOpen" (didDismiss)="cerrarDetalle()">
+  <ng-template>
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="brand-title">Detalle del Proveedor</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="cerrarDetalle()" style="--color: #ffffff; font-weight: 700;">CERRAR</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="detail-content" *ngIf="proveedorSeleccionado">
+
+      <!-- Cabecera verde -->
+      <div class="detail-hero">
+        <div class="hero-avatar">
+          <ion-icon name="storefront-outline"></ion-icon>
+        </div>
+        <h2>{{ proveedorSeleccionado.razon_social | uppercase }}</h2>
+        <span class="hero-badge">RUC: {{ proveedorSeleccionado.ruc }}</span>
+      </div>
+
+      <div class="detail-card">
+
+        <!-- Persona responsable -->
+        <div class="detail-row" *ngIf="proveedorSeleccionado.persona_responsable">
+          <div class="row-icon"><ion-icon name="person-circle-outline"></ion-icon></div>
+          <div class="row-body">
+            <span class="row-label">Persona responsable</span>
+            <span class="row-value">{{ proveedorSeleccionado.persona_responsable }}</span>
+          </div>
+        </div>
+
+        <!-- Dirección -->
+        <div class="detail-row" *ngIf="proveedorSeleccionado.direccion">
+          <div class="row-icon"><ion-icon name="location-outline"></ion-icon></div>
+          <div class="row-body">
+            <span class="row-label">Dirección</span>
+            <span class="row-value">{{ proveedorSeleccionado.direccion }}</span>
+          </div>
+        </div>
+
+        <!-- Teléfono con WhatsApp y Llamar -->
+        <div class="detail-row column" *ngIf="proveedorSeleccionado.telefono">
+          <div class="row-head">
+            <div class="row-icon"><ion-icon name="call-outline"></ion-icon></div>
+            <span class="row-label">Teléfono</span>
+          </div>
+          <div class="contact-box">
+            <span class="contact-value">{{ proveedorSeleccionado.telefono }}</span>
+            <div class="contact-actions">
+              <a class="btn-contact whatsapp" [href]="enlaceWhatsApp" target="_blank" rel="noopener">
+                <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+              </a>
+              <a class="btn-contact llamar" [href]="enlaceLlamada">
+                <ion-icon name="call-outline"></ion-icon> Llamar
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Correo con botón de enviar -->
+        <div class="detail-row column" *ngIf="proveedorSeleccionado.email">
+          <div class="row-head">
+            <div class="row-icon"><ion-icon name="mail-outline"></ion-icon></div>
+            <span class="row-label">Correo electrónico</span>
+          </div>
+          <div class="contact-box">
+            <span class="contact-value email">{{ proveedorSeleccionado.email }}</span>
+            <div class="contact-actions">
+              <a class="btn-contact correo" [href]="enlaceCorreo">
+                <ion-icon name="mail-outline"></ion-icon> Enviar correo
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medio de alerta automática -->
+        <div class="detail-row">
+          <div class="row-icon"><ion-icon name="notifications-outline"></ion-icon></div>
+          <div class="row-body">
+            <span class="row-label">Alertas automáticas por</span>
+            <span class="row-value">{{ proveedorSeleccionado.medio_alerta === 'CORREO' ? 'Gmail / Correo' : 'WhatsApp' }}</span>
+          </div>
+        </div>
+
+        <!-- Fecha de registro -->
+        <div class="detail-row">
+          <div class="row-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+          <div class="row-body">
+            <span class="row-label">Fecha de registro</span>
+            <span class="row-value">{{ formatearFecha(proveedorSeleccionado.fecha_registro) }}</span>
+          </div>
+        </div>
+
+        <!-- Editar -->
+        <ion-button expand="block" class="btn-editar" (click)="editarDesdeDetalle()">
+          <ion-icon name="create-outline" slot="start"></ion-icon>
+          EDITAR PROVEEDOR
+        </ion-button>
+      </div>
+
+    </ion-content>
+  </ng-template>
+</ion-modal>

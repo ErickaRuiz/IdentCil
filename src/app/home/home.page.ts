@@ -35,8 +35,7 @@ import {
   flaskOutline,
   chevronForwardOutline,
   cubeOutline,
-  timeOutline
-} from 'ionicons/icons';
+  timeOutline, storefrontOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { MENSAJE_ESCANER_DESCARGANDO, prepararEscanerQR } from '../services/escaner-qr';
 import { SupabaseService } from '../services/supabase';
@@ -50,6 +49,8 @@ interface ResultadoCilindro {
   almacenNombre: string | null;
   destino: string | null;   // con quién está cuando salió
   fecha: string | null;     // fecha del último movimiento (dd/mm/aaaa), si el estado la trae
+  estadoCilindro: string | null; // estado con el que se registró el cilindro (ej. LLENO, VACÍO...)
+  viaTransferencia?: boolean;    // true si el almacén actual viene de una transferencia entre almacenes
 }
 
 @Component({
@@ -99,27 +100,7 @@ export class HomePage implements OnInit {
     private toastController: ToastController,
     private cdr: ChangeDetectorRef
   ) {
-    addIcons({
-      logOutOutline,
-      arrowDownCircleOutline,
-      exitOutline,
-      arrowUpCircleOutline,
-      businessOutline,
-      peopleOutline,
-      documentTextOutline,
-      barcodeOutline,
-      searchOutline,
-      scanOutline,
-      closeCircle,
-      checkmarkCircle,
-      alertCircle,
-      helpCircle,
-      locationOutline,
-      flaskOutline,
-      chevronForwardOutline,
-      cubeOutline,
-      timeOutline
-    });
+    addIcons({logOutOutline,barcodeOutline,searchOutline,closeCircle,scanOutline,helpCircle,chevronForwardOutline,flaskOutline,checkmarkCircle,alertCircle,cubeOutline,businessOutline,arrowDownCircleOutline,exitOutline,arrowUpCircleOutline,storefrontOutline,peopleOutline,timeOutline,documentTextOutline,locationOutline,swapHorizontalOutline});
   }
 
   async ngOnInit() {
@@ -167,8 +148,14 @@ export class HomePage implements OnInit {
     }
   }
 
-  navegarA(ruta: string) {
-    this.router.navigate([ruta]);
+  async navegarA(ruta: string) {
+    try {
+      const abrio = await this.router.navigate([ruta]);
+      if (!abrio) this.mostrarToast('No se pudo abrir la pantalla (' + ruta + ').', 'warning');
+    } catch (err: any) {
+      // Ej.: la ruta no está registrada en app.routes.ts
+      this.mostrarToast('No se pudo abrir ' + ruta + ': ' + (err?.message || err), 'danger');
+    }
   }
 
   async cerrarSesion() {
@@ -255,29 +242,38 @@ export class HomePage implements OnInit {
   // Muestra los datos del cilindro de inmediato y completa la ubicación al terminar de consultarla.
   // Usa obtenerEstado (un solo cilindro), igual que la pantalla de Ingreso.
   private async mostrarCilindro(cilindro: any) {
-    this.resultado = { cilindro, situacion: 'CONSULTANDO', almacenNombre: null, destino: null, fecha: null };
+    this.resultado = { cilindro, situacion: 'CONSULTANDO', almacenNombre: null, destino: null, fecha: null, estadoCilindro: null };
     this.cdr.detectChanges();
 
     try {
       const serie = normalizarSerie(cilindro.numero_serie);
 
-      const [estado, nombres] = await Promise.all([
+      const [estado, nombres, estadoIngreso] = await Promise.all([
         obtenerEstado(this.supabaseService.supabase, serie),
-        this.obtenerNombresAlmacenes()
+        this.obtenerNombresAlmacenes(),
+        this.obtenerEstadoIngreso(cilindro.numero_serie)
       ]);
 
       // Si el usuario ya buscó otro cilindro, no se pisa el resultado
       if (!this.resultado || this.resultado.cilindro !== cilindro) return;
 
       const fecha = this.leerFecha(estado);
+      const estadoCilindro = estadoIngreso || this.leerEstadoCilindro(estado, cilindro);
 
       if (estaDentro(estado)) {
+        // Si fue transferido a otro almacén después de ingresar, manda el almacén de destino
+        const transf = await this.ubicacionPorTransferencia(cilindro.numero_serie, estado);
+        if (!this.resultado || this.resultado.cilindro !== cilindro) return;
+
+        const almacenId = transf ? transf.almacenId : estado.almacenId;
         this.resultado = {
           cilindro,
           situacion: 'DENTRO',
-          almacenNombre: estado.almacenId ? (nombres[estado.almacenId] || 'ALMACÉN SIN NOMBRE') : null,
+          almacenNombre: almacenId ? (nombres[almacenId] || 'ALMACÉN SIN NOMBRE') : null,
           destino: null,
-          fecha
+          fecha: transf ? transf.fecha : fecha,
+          estadoCilindro,
+          viaTransferencia: !!transf
         };
       } else if (haSalido(estado)) {
         this.resultado = {
@@ -285,19 +281,108 @@ export class HomePage implements OnInit {
           situacion: 'FUERA',
           almacenNombre: null,
           destino: estado.destino || null,
-          fecha
+          fecha,
+          estadoCilindro
         };
       } else {
-        this.resultado = { cilindro, situacion: 'SIN_MOVIMIENTOS', almacenNombre: null, destino: null, fecha: null };
+        this.resultado = { cilindro, situacion: 'SIN_MOVIMIENTOS', almacenNombre: null, destino: null, fecha: null, estadoCilindro };
       }
     } catch (err) {
       console.error('Error al consultar la ubicación:', err);
       if (this.resultado && this.resultado.cilindro === cilindro) {
-        this.resultado = { cilindro, situacion: 'SIN_MOVIMIENTOS', almacenNombre: null, destino: null, fecha: null };
+        this.resultado = { cilindro, situacion: 'SIN_MOVIMIENTOS', almacenNombre: null, destino: null, fecha: null, estadoCilindro: null };
       }
     } finally {
       this.cdr.detectChanges();
     }
+  }
+
+  // Busca en los ingresos el más reciente que contiene esta serie y devuelve el estado
+  // con el que se ingresó (LLENO, VACÍO, P.H., etc.), tal como se eligió en la pantalla de Ingreso.
+  private async obtenerEstadoIngreso(numeroSerie: string): Promise<string | null> {
+    if (!numeroSerie) return null;
+
+    // Se prueba con la serie tal cual y, si es distinta, con la serie normalizada
+    const variantes = Array.from(new Set([numeroSerie, normalizarSerie(numeroSerie)])).filter(v => !!v);
+
+    for (const serie of variantes) {
+      const estado = await this.consultarEstadoIngreso(serie);
+      if (estado) return estado;
+    }
+    return null;
+  }
+
+  private async consultarEstadoIngreso(serie: string): Promise<string | null> {
+    try {
+      // Para columnas JSONB el filtro debe enviarse como texto JSON
+      const filtro = JSON.stringify([{ numero_serie: serie }]);
+
+      let { data, error } = await this.supabaseService.supabase
+        .from('ingreso_cilindros')
+        .select('estado')
+        .contains('cilindros_ingresados', filtro)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      // Si la tabla no tiene created_at, se reintenta sin ordenar
+      if (error) {
+        const reintento = await this.supabaseService.supabase
+          .from('ingreso_cilindros')
+          .select('estado')
+          .contains('cilindros_ingresados', filtro)
+          .limit(1);
+        data = reintento.data;
+        error = reintento.error;
+      }
+
+      if (error) {
+        console.error('Error al consultar el estado de ingreso:', error.message);
+        return null;
+      }
+      if (!data || data.length === 0) return null;
+
+      return this.formatearEstadoIngreso(data[0].estado);
+    } catch (err) {
+      console.error('Error al consultar el estado de ingreso:', err);
+      return null;
+    }
+  }
+
+  // Convierte el valor guardado en un texto legible
+  private formatearEstadoIngreso(valor: any): string | null {
+    const v = String(valor || '').trim().toUpperCase();
+    if (!v) return null;
+
+    const nombres: { [k: string]: string } = {
+      'LLENO': 'LLENO',
+      'VACIO': 'VACÍO',
+      'P.H.': 'PRUEBA HIDROSTÁTICA (P.H.)',
+      'CAMBIO_VALVULA': 'CAMBIO DE VÁLVULA',
+      'DEVOLUCION': 'DEVOLUCIÓN'
+    };
+    return nombres[v] || v.replace(/_/g, ' ');
+  }
+
+  // Lee el estado con el que se registró el cilindro (acepta varios nombres de campo)
+  private leerEstadoCilindro(estado: EstadoCilindro, cilindro: any): string | null {
+    const e: any = estado || {};
+    const crudo =
+      e.estadoCilindro ?? e.estado_cilindro ?? e.estadoIngreso ?? e.estado_ingreso ??
+      e.condicion ?? e.estadoLlenado ?? e.estado_llenado ?? e.contenidoEstado ??
+      (typeof e.estado === 'string' ? e.estado : null) ??
+      cilindro?.estado_cilindro ?? cilindro?.estado ?? null;
+
+    const texto = crudo ? String(crudo).trim() : '';
+    return texto ? texto.toUpperCase() : null;
+  }
+
+  // Color del estado: LLENO (verde), VACÍO (gris), cualquier otro (ámbar)
+  obtenerClaseEstado(estado: string | null | undefined): string {
+    if (!estado) return '';
+    const v = estado.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    if (v.includes('LLENO')) return 'est-lleno';
+    if (v.includes('VACIO')) return 'est-vacio';
+    return 'est-otro';
   }
 
   // Lee la fecha del último movimiento si el estado la trae (acepta varios nombres de campo)
@@ -319,6 +404,38 @@ export class HomePage implements OnInit {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  // Si el cilindro fue transferido a otro almacén DESPUÉS de su último ingreso, manda el almacén de destino
+  private async ubicacionPorTransferencia(numeroSerie: string, estado: any): Promise<{ almacenId: number; fecha: string | null } | null> {
+    try {
+      const filtro = JSON.stringify([{ numero_serie: numeroSerie }]);
+      const { data, error } = await this.supabaseService.supabase
+        .from('transferencias_almacenes')
+        .select('almacen_destino_id, created_at')
+        .contains('cilindros_transferidos', filtro)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error || !data || data.length === 0) return null;
+
+      const fechaTransf = new Date(data[0].created_at);
+      if (isNaN(fechaTransf.getTime())) return null;
+
+      // Si el estado trae la fecha de su último movimiento y es posterior, no se aplica la transferencia
+      const crudo = estado?.fecha ?? estado?.fechaMovimiento ?? estado?.fecha_movimiento ?? estado?.fechaSalida ?? estado?.created_at ?? null;
+      if (crudo) {
+        const solo = String(crudo).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const base = solo ? new Date(Number(solo[1]), Number(solo[2]) - 1, Number(solo[3])) : new Date(crudo);
+        if (!isNaN(base.getTime()) && fechaTransf < base) return null;
+      }
+
+      return {
+        almacenId: Number(data[0].almacen_destino_id),
+        fecha: this.leerFecha({ fecha: data[0].created_at } as any)
+      };
+    } catch {
+      return null;
+    }
   }
 
   private async obtenerNombresAlmacenes(): Promise<{ [id: number]: string }> {

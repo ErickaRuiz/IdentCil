@@ -1,0 +1,134 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="custom-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" color="light"></ion-back-button>
+    </ion-buttons>
+    <ion-title class="header-title">
+      {{ esEdicion ? 'Actualizar Proveedor' : 'Registro de Proveedores' }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="main-container">
+  <div class="form-wrapper">
+
+    <!-- Encabezado -->
+    <div class="form-header">
+      <div class="header-icon">
+        <ion-icon [name]="esEdicion ? 'create-outline' : 'storefront-outline'"></ion-icon>
+      </div>
+      <h2>{{ esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h2>
+      <p>{{ esEdicion ? 'Modifique los campos requeridos y guarde los cambios' : 'Registro de empresas proveedoras con su RUC' }}</p>
+    </div>
+
+    <!-- Botón para ver la lista de proveedores registrados -->
+    <ion-button expand="block" class="btn-ver-lista" (click)="verLista()" type="button">
+      <ion-icon name="list-outline" slot="start"></ion-icon>
+      Ver lista de proveedores
+    </ion-button>
+
+    <form (ngSubmit)="guardarProveedor()" class="custom-form">
+
+      <!-- Tipo de documento (fijo: solo RUC) -->
+      <div class="input-card">
+        <ion-label class="input-label">Tipo de Documento</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="card-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" value="Empresa (RUC)" [readonly]="true" name="tipo_documento"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- RUC -->
+      <div class="input-card">
+        <ion-label class="input-label">Número de RUC *</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="document-text-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" inputmode="numeric" placeholder="Ej. 20536193805" [(ngModel)]="proveedor.ruc"
+            name="ruc" (ionInput)="filtrarNumero($event)" required>
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Razón social -->
+      <div class="input-card">
+        <ion-label class="input-label">Razón Social *</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="business-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" placeholder="Ej. ELECTRAMETAL NORPERÚ S.A.C." [(ngModel)]="proveedor.razon_social"
+            name="razon_social" required>
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Persona responsable -->
+      <div class="input-card">
+        <ion-label class="input-label">Persona Responsable (Apellidos y Nombres)</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="person-circle-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" placeholder="Ej. Pérez Gómez Juan Carlos"
+            [(ngModel)]="proveedor.persona_responsable" name="persona_responsable">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Dirección -->
+      <div class="input-card">
+        <ion-label class="input-label">Dirección Fiscal</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="location-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="text" placeholder="Ej. Jr. Independencia #1050" [(ngModel)]="proveedor.direccion"
+            name="direccion"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Teléfono -->
+      <div class="input-card">
+        <ion-label class="input-label">Teléfono de Contacto</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="call-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="tel" inputmode="numeric" placeholder="Ej. 987654321" [(ngModel)]="proveedor.telefono"
+            name="telefono"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Correo -->
+      <div class="input-card">
+        <ion-label class="input-label">Correo Electrónico</ion-label>
+        <ion-item lines="none" class="custom-input-item">
+          <ion-icon name="mail-outline" slot="start" class="field-icon"></ion-icon>
+          <ion-input type="email" placeholder="contacto@empresa.com" [(ngModel)]="proveedor.email"
+            name="email"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Medio por el que recibirá las alertas automáticas -->
+      <div class="input-card">
+        <ion-label class="input-label">Enviar alertas automáticas por</ion-label>
+        <div class="alert-options">
+          <div class="alert-option whatsapp" [class.activo]="proveedor.medio_alerta === 'WHATSAPP'"
+            (click)="seleccionarMedioAlerta('WHATSAPP')">
+            <ion-icon name="logo-whatsapp"></ion-icon>
+            <span>WhatsApp</span>
+          </div>
+          <div class="alert-option correo" [class.activo]="proveedor.medio_alerta === 'CORREO'"
+            (click)="seleccionarMedioAlerta('CORREO')">
+            <ion-icon name="mail-outline"></ion-icon>
+            <span>Gmail / Correo</span>
+          </div>
+        </div>
+        <p class="alert-hint">
+          {{ proveedor.medio_alerta === 'WHATSAPP' ? 'Se usará el teléfono registrado.' : 'Se usará el correo registrado.' }}
+        </p>
+      </div>
+
+      <!-- Botón -->
+      <div class="action-container">
+        <ion-button expand="block" color="success" (click)="guardarProveedor()" [disabled]="cargando"
+          class="btn-guardar">
+          {{ cargando ? 'Guardando...' : (esEdicion ? 'Actualizar Proveedor' : 'Registrar Proveedor') }}
+        </ion-button>
+      </div>
+
+    </form>
+  </div>
+</ion-content>

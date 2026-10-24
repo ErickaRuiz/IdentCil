@@ -1,0 +1,272 @@
+$verde: #177c4d;
+$morado: #7c3aed;
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+
+  h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #2c3e50; }
+  span { font-size: 0.75rem; color: #7f8c8d; }
+}
+
+.card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(124, 58, 237, 0.12);
+  color: $morado;
+  flex-shrink: 0;
+
+  ion-icon { font-size: 1.5rem; }
+}
+
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #dfe6e9;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-family: inherit;
+
+  &:focus { outline: none; border-color: $verde; }
+}
+
+.campo .etiqueta {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  margin-bottom: 4px;
+}
+
+// ---------- Búsqueda ----------
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #95a5a6;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 2.2rem;
+    border: 1px solid #dfe6e9;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    background: #f8f9fa;
+    text-transform: uppercase;
+
+    &:focus { outline: none; border-color: $verde; }
+  }
+
+  .btn-limpiar {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #b2bec3;
+    font-size: 1.2rem;
+    display: flex;
+  }
+}
+
+.btn-scan {
+  width: 48px;
+  border: none;
+  border-radius: 10px;
+  background: $verde;
+  color: #fff;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ayuda {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #95a5a6;
+}
+
+.cargando {
+  display: flex;
+  justify-content: center;
+  padding: 0.8rem;
+  ion-spinner { color: $verde; }
+}
+
+.lista-vacia {
+  margin-top: 0.8rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #95a5a6;
+}
+
+// ---------- Lista de cilindros registrados ----------
+.lista-cil {
+  margin-top: 0.7rem;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid #eef1f2;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+
+  .check { font-size: 1.5rem; color: #b2bec3; flex-shrink: 0; }
+
+  .fila-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    strong { font-size: 0.95rem; color: #2c3e50; }
+    span { font-size: 0.72rem; color: #7f8c8d; }
+  }
+
+  ion-spinner { width: 20px; height: 20px; color: $verde; }
+
+  &.elegido {
+    background: rgba(23, 124, 77, 0.08);
+    border-color: rgba(23, 124, 77, 0.5);
+    .check { color: $verde; }
+  }
+}
+
+// ---------- Elegidos ----------
+.lista-titulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7f8c8d;
+  margin-bottom: 0.5rem;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.4rem;
+  border-radius: 10px;
+  background: #f8f9fa;
+  border-left: 4px solid $verde;
+
+  .item-info {
+    display: flex;
+    flex-direction: column;
+    strong { font-size: 0.95rem; color: #2c3e50; }
+    span { font-size: 0.72rem; color: #7f8c8d; }
+  }
+
+  .btn-quitar {
+    background: none;
+    border: none;
+    color: #e11d48;
+    font-size: 1.3rem;
+    display: flex;
+  }
+
+  &.conflicto {
+    background: rgba(225, 29, 72, 0.08);
+    border-left-color: #e11d48;
+  }
+}
+
+.error {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(225, 29, 72, 0.1);
+  color: #be123c;
+  font-size: 0.8rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  ion-icon { font-size: 1.1rem; flex-shrink: 0; }
+}
+
+.resumen {
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.08);
+  font-size: 0.82rem;
+  color: #2c3e50;
+}
+
+// ---------- Botones ----------
+.btn-confirmar,
+.btn-reporte,
+.btn-nueva {
+  width: 100%;
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+
+  ion-icon { font-size: 1.2rem; }
+  ion-spinner { width: 20px; height: 20px; color: #fff; }
+  &:disabled { opacity: 0.5; }
+}
+
+.btn-confirmar { margin-top: 0.9rem; border: none; background: $morado; color: #fff; }
+.btn-reporte { border: none; background: $verde; color: #fff; margin-bottom: 0.5rem; }
+.btn-nueva { border: 1.5px solid $morado; background: transparent; color: $morado; }
+
+// ---------- Transferencia registrada ----------
+.card.exito {
+  border: 1.5px solid rgba(23, 124, 77, 0.35);
+  background: linear-gradient(180deg, #f1faf5 0%, #ffffff 100%);
+
+  .exito-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+
+    > ion-icon { font-size: 2.2rem; color: $verde; flex-shrink: 0; }
+    h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #2c3e50; }
+    span { font-size: 0.78rem; color: #5f6c73; }
+  }
+}

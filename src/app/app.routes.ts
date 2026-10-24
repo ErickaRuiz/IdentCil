@@ -36,6 +36,11 @@ export const routes: Routes = [
     loadComponent: () => import('./Recojo/recojo').then((m) => m.RecojoComponent),
   },
   {
+    path: 'transf-almacenes',
+    canActivate: [sesionGuard],
+    loadComponent: () => import('./Transf_Almacenes/transf_almacenes').then((m) => m.TransfAlmacenesPage),
+  },
+  {
     path: 'registrocliente',
     canActivate: [sesionGuard],
     loadComponent: () => import('./RegistroCliente/registrocliente').then((m) => m.RegistroClienteComponent),
@@ -105,6 +110,21 @@ export const routes: Routes = [
 {
   path: 'historial-cilindro',
   loadComponent: () => import('./HistorialdeCilindro/historial_cilindro').then(m => m.HistorialDeCilindroPage)
+},
+{
+  path: 'registro-proveedores',
+  canActivate: [sesionGuard],
+  loadComponent: () => import('./Registro_Proveedores/registro_proveedor').then(m => m.RegistroProveedorPage)
+},
+{
+  path: 'lista-proveedores',
+  canActivate: [sesionGuard],
+  loadComponent: () => import('./Lista_Proveedores/lista-proveedores').then(m => m.ListaProveedoresPage)
+},
+{
+  path: 'registro-proveedores/:id',
+  canActivate: [sesionGuard],
+  loadComponent: () => import('./Registro_Proveedores/registro_proveedor').then(m => m.RegistroProveedorPage)
 }
 
 ];
